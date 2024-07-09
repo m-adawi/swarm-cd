@@ -1,0 +1,14 @@
+# Here you define the repos you want to use
+
+# The keys being repo names which should be
+# unique and will be used as directory names
+# when cloning these repos
+swarm-cd:
+  # The url to the repo on the git server
+  url: "https://github.com/m-adawi/swarm-cd.git"
+  # Username used for authentication
+  username: m-adawi
+  # Password or personal token
+  password: ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+  

@@ -1,4 +1,5 @@
-swarm-cd:
-  url: "https://github.com/m-adawi/swarm-cd.git"
+swarm-cd-example:
+  url: "https://github.com/m-adawi/swarm-cd-example.git"
+
 
   

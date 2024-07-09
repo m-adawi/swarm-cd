@@ -1,0 +1,16 @@
+# This file should contain all the stacks
+# that you want swarm-cd to keep synching 
+
+  # Name of the stack, it will be used in 
+  # the stack deploy command as the stack name
+- name: stack 
+  # The repo that contain the stack compose file
+  # and other config files
+  repo: swarm-cd
+  # The repo branch to checkout from the stack repo
+  # before deploying or updating stack
+  branch: main
+  # The path to the docker compose file where stack
+  # is defined
+  compose_file: example/hello-world/compose.yaml
+

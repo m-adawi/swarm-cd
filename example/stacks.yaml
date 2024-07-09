@@ -1,5 +1,5 @@
-- name: stack
-  repo: swarm-cd
+- name: hello-world
+  repo: swarm-cd-example
   branch: main
-  compose_file: example/hello-world/compose.yaml
+  compose_file: compose.yaml
 
