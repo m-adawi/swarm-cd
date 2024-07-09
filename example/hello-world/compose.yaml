@@ -1,0 +1,9 @@
+services:
+  hello_world:
+    image: hello-world
+    configs:
+    - source: config
+      target: /config.txt 
+configs:
+  config: 
+    file: configs/config.txt
