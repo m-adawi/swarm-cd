@@ -1,5 +1,6 @@
-- name: hello-world
-  repo: swarm-cd-example
-  branch: main
-  compose_file: compose.yaml
+stacks:
+  - name: hello-world
+    repo: swarm-cd-example
+    branch: main
+    compose_file: compose.yaml
 

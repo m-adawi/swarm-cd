@@ -10,8 +10,6 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	// "github.com/docker/docker/cli/cli/command/stack"
-	// "github.com/docker/docker/cli/cli/flags"
 )
 
 
@@ -19,7 +17,7 @@ type StackConfig struct {
 	Name string
 	Repo string
 	Branch string
-	ComposeFile string `json:"compose_file"`
+	ComposeFile string `mapstructure:"compose_file"`
 }
 
 type RepoConfig struct {

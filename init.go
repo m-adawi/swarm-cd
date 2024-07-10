@@ -3,21 +3,16 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path"
-
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"sigs.k8s.io/yaml"
-	// "github.com/docker/docker/cli/cli/command/stack"
-	// "github.com/docker/docker/cli/cli/flags"
 )
 
 func init() {
-	err := initStacks()
+	err := initConfigs()
 	handleError(err)
 
 	err = initRepos()
@@ -27,42 +22,8 @@ func init() {
 	handleError(err)
 }
 
-func initStacks() error {
-    stackFile, err := os.Open("stacks.yaml") 
-	if err != nil {
-		return err
-	}
-	defer stackFile.Close()
-	
-	stackFileBytes, err := io.ReadAll(stackFile)
-	if err != nil {
-		return err
-	}
-
-	err = yaml.Unmarshal(stackFileBytes, &stackConfigs)
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 func initRepos() (err error) {
-	reposFile, err := os.Open("repos.yaml") 
-	if err != nil {
-		return err
-	}
-	defer reposFile.Close()
-	
-	reposFileBytes, err := io.ReadAll(reposFile)
-	if err != nil {
-		return err
-	}
-	
-	err = yaml.Unmarshal(reposFileBytes, &repoConfigs)
-	if err != nil {
-		return err
-	}
-
 	for repoName, repoConfig := range repoConfigs {
 		repoPath := path.Join(reposPath, repoName)
 		var repo *git.Repository
@@ -106,7 +67,7 @@ func initDockerCli() (err error) {
 
 func handleError(err error) {
 	if err != nil {
-		fmt.Print(err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }

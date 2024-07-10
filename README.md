@@ -5,7 +5,7 @@ A declarative GitOps and Continuous Deployment tool for Docker Swarm.
 Inspired by [ArgoCD](https://argo-cd.readthedocs.io/en/stable/). 
 
 # Usage
-In this example, we use swarm-cd to deploy the stack in the repo 
+In this example, we use SwarmCD to deploy the stack in the repo 
 [swarm-cd-example](https://github.com/m-adawi/swarm-cd-example) to a docker swarm cluster.
 
 First we add the repo to the file `repos.yaml`
@@ -20,10 +20,11 @@ Then we define the stack in `stacks.yaml`
 
 ```yaml
 # stacks.yaml
-- name: hello-world
-  repo: swarm-cd-example
-  branch: main
-  compose_file: compose.yaml
+stacks:
+  - name: hello-world
+    repo: swarm-cd-example
+    branch: main
+    compose_file: compose.yaml
 ```
 
 And finally, we deploy SwarmCD to the cluster 
@@ -47,7 +48,7 @@ services:
 
 Run this on a swarm manager node:
 ```bash
-docker stack deploy --compose-file docker-compose.yaml
+docker stack deploy --compose-file docker-compose.yaml swarm-cd
 ```
 
 This will start SwarmCD, it will periodically check the stack repo
