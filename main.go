@@ -4,8 +4,6 @@ import (
 	"log"
 	"path"
 	"time"
-
-	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/command/stack"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -13,71 +11,50 @@ import (
 )
 
 
-type StackConfig struct {
-	Name string
-	Repo string
-	Branch string
-	ComposeFile string `mapstructure:"compose_file"`
-}
-
-type RepoConfig struct {
-	Url	string
-	Username string
-	Password string
-}
-
-var stackConfigs []StackConfig
-
-var repoConfigs map[string]RepoConfig
-
-var repos map[string] *git.Repository = make(map[string]*git.Repository)
-
-const reposPath string = "repos/"
-
-var dockerCli *command.DockerCli
-
-const updateInterval = 120
 
 func main() {
 	for {
-		for _, stackConfig := range stackConfigs {
-			updateStack(stackConfig)
+		for stackName, _ := range config.StackConfigs {
+			updateStack(stackName)
 		}
-		time.Sleep(updateInterval * time.Second)
+		time.Sleep(time.Duration(config.UpdateInterval) * time.Second)
 	}
 
 }
 
-
-func updateStack(stackConfig StackConfig) (err error) {
-	err = pullChanges(stackConfig)
+func updateStack(stackName string) (err error) {
+	err = pullChanges(stackName)
 	if err != nil && err != git.NoErrAlreadyUpToDate {
 		log.Print(err)
-		return 
+		return
 	}
+	stackConfig := config.StackConfigs[stackName]
 	cmd := stack.NewStackCommand(dockerCli)
-	cmd.SetArgs([]string{"deploy", "-c", path.Join(reposPath, stackConfig.Repo, stackConfig.ComposeFile), stackConfig.Name})
+	cmd.SetArgs([]string{
+		"deploy", "-c",
+		path.Join(config.ReposPath, stackConfig.Repo, stackConfig.ComposeFile),
+		stackName,
+	})
 	err = cmd.Execute()
 	if err != nil {
 		log.Print(err)
-		return 
+		return
 	}
 	return nil
 }
 
-
-func pullChanges(stackConfig StackConfig) error {
-	repoConfig := repoConfigs[stackConfig.Repo]
-	repo := repos[stackConfig.Repo]
+func pullChanges(stackName string) error {
+	stackConfig := config.StackConfigs[stackName]
+	repoConfig := config.RepoConfigs[stackConfig.Repo]
 	branch := stackConfig.Branch
-	w, err := repo.Worktree()
+	workTree, err := repos[stackConfig.Repo].Worktree()
 	if err != nil {
 		return err
 	}
-	err = w.Checkout(&git.CheckoutOptions{
+	err = workTree.Checkout(&git.CheckoutOptions{
 		Branch: plumbing.NewBranchReferenceName(branch),
 	})
-	if err != nil { 
+	if err != nil {
 		return err
 	}
 	pullOptions := &git.PullOptions{
@@ -89,8 +66,6 @@ func pullChanges(stackConfig StackConfig) error {
 			Password: repoConfig.Password,
 		}
 	}
-	err = w.Pull(pullOptions)
+	err = workTree.Pull(pullOptions)
 	return err
 }
-
-

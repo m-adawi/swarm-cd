@@ -11,6 +11,10 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
+var repos map[string]*git.Repository = make(map[string]*git.Repository)
+
+var dockerCli *command.DockerCli
+
 func init() {
 	err := initConfigs()
 	handleError(err)
@@ -24,8 +28,8 @@ func init() {
 
 
 func initRepos() (err error) {
-	for repoName, repoConfig := range repoConfigs {
-		repoPath := path.Join(reposPath, repoName)
+	for repoName, repoConfig := range config.RepoConfigs {
+		repoPath := path.Join(config.ReposPath, repoName)
 		var repo *git.Repository
 		cloneOptions := &git.CloneOptions{
 			URL:      repoConfig.Url,

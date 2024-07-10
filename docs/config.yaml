@@ -1,0 +1,17 @@
+# SwarmCD configuration file refernce
+
+# The interval in seconds that SwarmCD 
+# waits everytime before pulling 
+update_interval: 120
+
+# The path where SwarmCD will checkout repos
+repos_path: repos/
+
+# You can define repos here instead of 
+# defining a separate repos.yaml file
+repos:
+
+# You can define stacks here instead of 
+# defining a separate stacks.yaml file
+stacks:
+

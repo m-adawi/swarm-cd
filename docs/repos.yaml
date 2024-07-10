@@ -1,13 +1,15 @@
-# Here you define the repos you want to use
+# SwarmCD repos configuration refernce 
+# Here you define the repos you want to 
+# deploy stacks from
 
 # The keys being repo names which should be
 # unique and will be used as directory names
 # when cloning these repos
-swarm-cd:
+repo-name:
   # The url to the repo on the git server
-  url: "https://github.com/m-adawi/swarm-cd.git"
+  url: "https://github.com/user/repo.git"
   # Username used for authentication
-  username: m-adawi
+  username: user
   # Password or personal token
   password: ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

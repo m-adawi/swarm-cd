@@ -20,8 +20,7 @@ Then we define the stack in `stacks.yaml`
 
 ```yaml
 # stacks.yaml
-stacks:
-  - name: hello-world
+hello-world:
     repo: swarm-cd-example
     branch: main
     compose_file: compose.yaml
