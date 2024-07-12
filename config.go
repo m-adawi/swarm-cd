@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/spf13/viper"
 )
@@ -30,18 +31,18 @@ var config Config
 func initConfigs() (err error) {
 	err = readConfig()
 	if err != nil { 
-		return
+		return fmt.Errorf("could not read configuration file: %w", err)
 	}
 	if config.RepoConfigs == nil {
 		err = readRepoConfigs()
 		if err != nil {
-			return
+			return fmt.Errorf("could not read repos file: %w", err)
 		}
 	}
 	if config.StackConfigs == nil {
 		err = readStackConfigs()
 		if err != nil {
-			return
+			return  fmt.Errorf("could not load stacks file: %w", err)
 		}
 	}
 	return

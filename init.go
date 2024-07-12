@@ -3,8 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path"
+
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
 	"github.com/go-git/go-git/v5"
@@ -17,13 +19,13 @@ var dockerCli *command.DockerCli
 
 func init() {
 	err := initConfigs()
-	handleError(err)
+	handleInitError(err)
 
 	err = initRepos()
-	handleError(err)
+	handleInitError(err)
 
 	err = initDockerCli()
-	handleError(err)
+	handleInitError(err)
 }
 
 
@@ -34,7 +36,6 @@ func initRepos() (err error) {
 		cloneOptions := &git.CloneOptions{
 			URL:      repoConfig.Url,
 			Depth: 1,
-			Progress: os.Stdout,
 		}
 		if repoConfig.Password != "" && repoConfig.Username != "" {
 			cloneOptions.Auth = &http.BasicAuth{
@@ -48,10 +49,10 @@ func initRepos() (err error) {
 			if errors.Is(err, git.ErrRepositoryAlreadyExists) {
 				repo, err = git.PlainOpen(repoPath)
 				if err != nil {
-					return err
+					return fmt.Errorf("could not open existing repo %s: %w", repoName, err)
 				}
 			} else  {
-				return err
+				return fmt.Errorf("could not clone repo %s: %w", repoName, err)
 			}
 		}
 		repos[repoName] = repo
@@ -63,13 +64,16 @@ func initRepos() (err error) {
 func initDockerCli() (err error) {
 	dockerCli, err = command.NewDockerCli()
 	if err != nil { 
-		return err
+		return fmt.Errorf("could not create a docker cli object: %w", err)
 	}
-	dockerCli.Initialize(flags.NewClientOptions())
+	err = dockerCli.Initialize(flags.NewClientOptions())
+	if err != nil { 
+		return fmt.Errorf("could not initialize docker cli object: %w", err)
+	}
 	return nil
 }
 
-func handleError(err error) {
+func handleInitError(err error) {
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
