@@ -34,7 +34,7 @@ using the following docker-compose file:
 version: '3.7'
 services:
   swarm-cd:
-    image: ghcr.io/m-adawi/swarm-cd:v0.0.1
+    image: ghcr.io/m-adawi/swarm-cd:latest
     deploy:
       placement:
         constraints:
