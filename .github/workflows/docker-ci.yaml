@@ -7,6 +7,8 @@ on:
 
 jobs:
   docker:
+    permissions:
+      packages: write
     runs-on: ubuntu-latest
     steps:
       - name: Login to Docker Hub
@@ -20,4 +22,4 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: m-adawi/swarm-cd:latest
+          tags: ghcr.io/${{ github.actor }}/${{ github.repository }}:latest
