@@ -2,15 +2,37 @@ name: Build and push docker image
 
 on:
   push:
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+      - "Dockerfile"
     branches:
       - main
+      - gin-server
 
 jobs:
   docker:
     permissions:
       packages: write
+      contents: write
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "lts/*"
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
+            
       - name: Login to Docker registry
         uses: docker/login-action@v3
         with:
