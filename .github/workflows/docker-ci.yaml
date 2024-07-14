@@ -9,6 +9,7 @@ on:
       # - "Dockerfile"
     branches:
       - main
+      - gin-server
 
 jobs:
   docker:
