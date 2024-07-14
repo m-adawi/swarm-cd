@@ -2,14 +2,13 @@ name: Build and push docker image
 
 on:
   push:
-    # paths:
-    #   - "**.go"
-    #   - "go.mod"
-    #   - "go.sum"
-    #   - "Dockerfile"
+    paths:
+      # - "**.go"
+      # - "go.mod"
+      # - "go.sum"
+      # - "Dockerfile"
     branches:
       - main
-      - gin-server
 
 jobs:
   docker:
@@ -28,18 +27,9 @@ jobs:
 
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v4
+        id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
-      # - name: Setup Node.js
-      #   uses: actions/setup-node@v3
-      #   with:
-      #     node-version: "lts/*"
-
-
-      # - name: Release
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   run: npx semantic-release
             
       - name: Login to Docker registry
         uses: docker/login-action@v3
@@ -50,6 +40,7 @@ jobs:
       
       - name: Build and push
         uses: docker/build-push-action@v6
+        if: ${{ steps.release.outputs.new_release_published == 'true' }}
         with:
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: ghcr.io/${{ github.repository }}:latest, ghcr.io/${{ github.repository }}:${{ steps.release.outputs.new_release_version }}
