@@ -2,11 +2,11 @@ name: Build and push docker image
 
 on:
   push:
-    paths:
-      - "**.go"
-      - "go.mod"
-      - "go.sum"
-      - "Dockerfile"
+    # paths:
+    #   - "**.go"
+    #   - "go.mod"
+    #   - "go.sum"
+    #   - "Dockerfile"
     branches:
       - main
       - gin-server
