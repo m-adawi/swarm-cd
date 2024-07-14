@@ -24,6 +24,8 @@ func init() {
 	err = initRepos()
 	handleInitError(err)
 
+	initStacks()
+
 	err = initDockerCli()
 	handleInitError(err)
 }
@@ -61,6 +63,14 @@ func initRepos() (err error) {
 
 	return nil
 }
+
+func initStacks() { 
+	for stack, stackConfig := range config.StackConfigs{
+		stackStatus[stack] = &StackStatus{}
+		stackStatus[stack].RepoURL = config.RepoConfigs[stackConfig.Repo].Url
+	}
+}
+
 
 func initDockerCli() (err error) {
 	// suppress command outputs (errors are returned as objects)

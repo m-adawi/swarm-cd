@@ -14,7 +14,16 @@ import (
 
 var repoLocks map[string]*sync.Mutex = make(map[string]*sync.Mutex)
 
+var stackStatus map[string]*StackStatus = map[string]*StackStatus{}
+
+type StackStatus struct {
+	Error string
+	Revision string
+	RepoURL string
+}
+
 func main() {
+	go runWebServer()
 	logger.Info("starting SwarmCD")
 	for {
 		var waitGroup sync.WaitGroup
@@ -27,7 +36,7 @@ func main() {
 		logger.Info("waiting for the update interval")
 		time.Sleep(time.Duration(config.UpdateInterval) * time.Second)
 	}
-
+ 
 }
 
 func updateStackThread(waitGroup *sync.WaitGroup, stackName string) {
@@ -45,14 +54,15 @@ func updateStackThread(waitGroup *sync.WaitGroup, stackName string) {
 }
 
 func updateStack(stackName string) (err error) {
-	err = pullChanges(stackName)
+	revision, err := pullChanges(stackName)
 	if err != nil && err != git.NoErrAlreadyUpToDate {
+		stackStatus[stackName].Error = err.Error()
 		return
 	}
 	stackConfig := config.StackConfigs[stackName]
 	cmd := stack.NewStackCommand(dockerCli)
 	cmd.SetArgs([]string{
-		"deploy", "--detach", "-c",
+		"deploy", "--detach", "--with-registry-auth", "-c",
 		path.Join(config.ReposPath, stackConfig.Repo, stackConfig.ComposeFile),
 		stackName,
 	})
@@ -62,25 +72,29 @@ func updateStack(stackName string) (err error) {
 	cmd.SilenceUsage = true
 	err = cmd.Execute()
 	if err != nil {
+		stackStatus[stackName].Error = err.Error()
 		return fmt.Errorf("could not deploy stack %s: %s", stackName, err.Error())
 	}
+	stackStatus[stackName].Error = ""
+	stackStatus[stackName].Revision = revision
 	return 
 }
 
-func pullChanges(stackName string) (err error) {
+func pullChanges(stackName string) (revision string, err error) {
 	stackConfig := config.StackConfigs[stackName]
 	repoConfig := config.RepoConfigs[stackConfig.Repo]
 	branch := stackConfig.Branch
+	repo := repos[stackConfig.Repo]
 	// repos[stackConfig.Repo].//Branch(branch)//.Fetch(&git.FetchOptions{})
-	workTree, err := repos[stackConfig.Repo].Worktree()
+	workTree, err := repo.Worktree()
 	if err != nil {
-		return fmt.Errorf("could not get %s repo worktree: %w", stackConfig.Repo, err)
+		return "", fmt.Errorf("could not get %s repo worktree: %w", stackConfig.Repo, err)
 	}
 	err = workTree.Checkout(&git.CheckoutOptions{
 		Branch: plumbing.ReferenceName("refs/remotes/origin/" + branch),
 	})
 	if err != nil {
-		return fmt.Errorf("could not checkout branch %s: %w", branch, err)
+		return "", fmt.Errorf("could not checkout branch %s: %w", branch, err)
 	}
 	pullOptions := &git.PullOptions{
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
@@ -94,7 +108,8 @@ func pullChanges(stackName string) (err error) {
 	}
 	err = workTree.Pull(pullOptions)
 	if err != nil {
-		return fmt.Errorf("could not pull %s branch in %s repo: %w", branch, stackConfig.Repo,  err)
+		return "", fmt.Errorf("could not pull %s branch in %s repo: %w", branch, stackConfig.Repo,  err)
 	}
-	return 
+	ref, err := repo.Head()
+	return ref.Hash().String()[:8], err
 }
