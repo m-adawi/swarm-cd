@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sync"
 
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
@@ -55,17 +56,22 @@ func initRepos() (err error) {
 			}
 		}
 		repos[repoName] = repo
+		repoLocks[repoName] = &sync.Mutex{}
 	}
 
 	return nil
 }
 
 func initDockerCli() (err error) {
-	dockerCli, err = command.NewDockerCli()
+	// suppress command outputs (errors are returned as objects)
+	nullFile, _ := os.Open("/dev/null")
+	defer nullFile.Close()
+	dockerCli, err = command.NewDockerCli(command.WithOutputStream(nullFile), command.WithErrorStream(nullFile))
 	if err != nil { 
 		return fmt.Errorf("could not create a docker cli object: %w", err)
 	}
 	err = dockerCli.Initialize(flags.NewClientOptions())
+
 	if err != nil { 
 		return fmt.Errorf("could not initialize docker cli object: %w", err)
 	}
