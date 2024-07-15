@@ -3,10 +3,10 @@ name: Build and push docker image
 on:
   push:
     paths:
-      - "**.go"
-      - "go.mod"
-      - "go.sum"
-      - "Dockerfile"
+      # - "**.go"
+      # - "go.mod"
+      # - "go.sum"
+      # - "Dockerfile"
     branches:
       - main
       - gin-server
@@ -22,19 +22,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "lts/*"
 
-      - name: Release
+      - name: Build docker image
+        uses: docker/build-push-action@v6
+        with:
+          load: true
+
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v4
+        id: release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
             
       - name: Login to Docker registry
         uses: docker/login-action@v3
@@ -43,8 +44,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Build and push
+      - name: Push docker image
         uses: docker/build-push-action@v6
+        if: ${{ steps.release.outputs.new_release_published == 'true' }}
         with:
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: ghcr.io/${{ github.repository }}:latest, ghcr.io/${{ github.repository }}:${{ steps.release.outputs.new_release_version }}
