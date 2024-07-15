@@ -22,9 +22,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Build docker image
+        uses: docker/build-push-action@v6
+        with:
+          load: true
 
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v4
@@ -39,7 +44,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Build and push
+      - name: Push docker image
         uses: docker/build-push-action@v6
         if: ${{ steps.release.outputs.new_release_published == 'true' }}
         with:
