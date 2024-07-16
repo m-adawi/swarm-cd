@@ -1,20 +1,19 @@
-package main
+package swarmcd
 
 import (
 	"fmt"
+	"log/slog"
 	"path"
 	"sync"
 	"time"
 
+	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/command/stack"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/m-adawi/swarm-cd/util"
 )
-
-var repoLocks map[string]*sync.Mutex = make(map[string]*sync.Mutex)
-
-var stackStatus map[string]*StackStatus = map[string]*StackStatus{}
 
 type StackStatus struct {
 	Error string
@@ -22,8 +21,19 @@ type StackStatus struct {
 	RepoURL string
 }
 
-func main() {
-	go runWebServer()
+var repoLocks map[string]*sync.Mutex = make(map[string]*sync.Mutex)
+
+var stackStatus map[string]*StackStatus = map[string]*StackStatus{}
+
+var config *util.Config = &util.Configs
+
+var logger *slog.Logger = util.Logger
+
+var repos map[string]*git.Repository = make(map[string]*git.Repository)
+
+var dockerCli *command.DockerCli
+
+func Run() {
 	logger.Info("starting SwarmCD")
 	for {
 		var waitGroup sync.WaitGroup
@@ -36,7 +46,6 @@ func main() {
 		logger.Info("waiting for the update interval")
 		time.Sleep(time.Duration(config.UpdateInterval) * time.Second)
 	}
- 
 }
 
 func updateStackThread(waitGroup *sync.WaitGroup, stackName string) {
@@ -112,4 +121,8 @@ func pullChanges(stackName string) (revision string, err error) {
 	}
 	ref, err := repo.Head()
 	return ref.Hash().String()[:8], err
+}
+
+func GetStackStatus() map[string]*StackStatus {
+	return stackStatus
 }

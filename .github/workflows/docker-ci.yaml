@@ -7,8 +7,7 @@ on:
       - "go.mod"
       - "go.sum"
       - "Dockerfile"
-    branches:
-      - main
+
 
 jobs:
   docker:
@@ -38,6 +37,7 @@ jobs:
             
       - name: Login to Docker registry
         uses: docker/login-action@v3
+        if: ${{ github.ref_name == 'main' }}
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -45,7 +45,7 @@ jobs:
       
       - name: Push docker image
         uses: docker/build-push-action@v6
-        if: ${{ steps.release.outputs.new_release_published == 'true' }}
+        if: ${{ github.ref_name == 'main' && steps.release.outputs.new_release_published == 'true' }}
         with:
           push: true
           tags: ghcr.io/${{ github.repository }}:latest, ghcr.io/${{ github.repository }}:${{ steps.release.outputs.new_release_version }}

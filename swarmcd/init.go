@@ -1,4 +1,4 @@
-package main
+package swarmcd
 
 import (
 	"errors"
@@ -13,23 +13,18 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
-var repos map[string]*git.Repository = make(map[string]*git.Repository)
-
-var dockerCli *command.DockerCli
-
-func init() {
-	err := initConfigs()
-	handleInitError(err)
-
+func Init() (err error ) {
 	err = initRepos()
-	handleInitError(err)
-
+	if err != nil {
+		return err
+	}
 	initStacks()
-
 	err = initDockerCli()
-	handleInitError(err)
+	if err != nil {
+		return err
+	}
+	return
 }
-
 
 func initRepos() (err error) {
 	for repoName, repoConfig := range config.RepoConfigs {
@@ -86,11 +81,4 @@ func initDockerCli() (err error) {
 		return fmt.Errorf("could not initialize docker cli object: %w", err)
 	}
 	return nil
-}
-
-func handleInitError(err error) {
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
 }
