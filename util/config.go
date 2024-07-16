@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"errors"
@@ -26,20 +26,20 @@ type Config struct {
 	RepoConfigs    map[string]*RepoConfig  `mapstructure:"repos"`
 }
 
-var config Config
+var Configs Config
 
-func initConfigs() (err error) {
+func LoadConfigs() (err error) {
 	err = readConfig()
 	if err != nil { 
 		return fmt.Errorf("could not read configuration file: %w", err)
 	}
-	if config.RepoConfigs == nil {
+	if Configs.RepoConfigs == nil {
 		err = readRepoConfigs()
 		if err != nil {
 			return fmt.Errorf("could not read repos file: %w", err)
 		}
 	}
-	if config.StackConfigs == nil {
+	if Configs.StackConfigs == nil {
 		err = readStackConfigs()
 		if err != nil {
 			return  fmt.Errorf("could not load stacks file: %w", err)
@@ -58,7 +58,7 @@ func readConfig () (err error) {
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}){
 		return
 	}
-	err = configViper.Unmarshal(&config)
+	err = configViper.Unmarshal(&Configs)
 	if err != nil {
 		return
 	}
@@ -73,7 +73,7 @@ func readRepoConfigs() (err error) {
 	if err != nil {
 		return
 	}
-	err = reposViper.Unmarshal(&config.RepoConfigs)
+	err = reposViper.Unmarshal(&Configs.RepoConfigs)
 	if err != nil {
 		return
 	}
@@ -88,7 +88,7 @@ func readStackConfigs() (err error) {
 	if err != nil {
 		return
 	}
-	err = stacksViper.Unmarshal(&config.StackConfigs)
+	err = stacksViper.Unmarshal(&Configs.StackConfigs)
 	if err != nil {
 		return
 	}
