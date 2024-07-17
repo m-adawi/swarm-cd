@@ -18,7 +18,10 @@ func Init() (err error ) {
 	if err != nil {
 		return err
 	}
-	initStacks()
+	err = initStacks()
+	if err != nil {
+		return err
+	}
 	err = initDockerCli()
 	if err != nil {
 		return err
@@ -59,11 +62,16 @@ func initRepos() (err error) {
 	return nil
 }
 
-func initStacks() { 
+func initStacks() error { 
 	for stack, stackConfig := range config.StackConfigs{
 		stackStatus[stack] = &StackStatus{}
-		stackStatus[stack].RepoURL = config.RepoConfigs[stackConfig.Repo].Url
+		repoConfig, ok := config.RepoConfigs[stackConfig.Repo]
+		if !ok {
+			return fmt.Errorf("error initializing %s stack, no such repo: %s", stack, stackConfig.Repo)
+		}
+		stackStatus[stack].RepoURL = repoConfig.Url
 	}
+	return nil
 }
 
 
