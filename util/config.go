@@ -10,7 +10,8 @@ import (
 type StackConfig struct {
 	Repo        string
 	Branch      string
-	ComposeFile string `mapstructure:"compose_file"`
+	ComposeFile string   `mapstructure:"compose_file"`
+	SopsFiles   []string `mapstructure:"sops_files"`
 }
 
 type RepoConfig struct {
@@ -30,7 +31,7 @@ var Configs Config
 
 func LoadConfigs() (err error) {
 	err = readConfig()
-	if err != nil { 
+	if err != nil {
 		return fmt.Errorf("could not read configuration file: %w", err)
 	}
 	if Configs.RepoConfigs == nil {
@@ -42,20 +43,20 @@ func LoadConfigs() (err error) {
 	if Configs.StackConfigs == nil {
 		err = readStackConfigs()
 		if err != nil {
-			return  fmt.Errorf("could not load stacks file: %w", err)
+			return fmt.Errorf("could not load stacks file: %w", err)
 		}
 	}
 	return
 }
 
-func readConfig () (err error) {
+func readConfig() (err error) {
 	configViper := viper.New()
 	configViper.SetConfigName("config")
 	configViper.AddConfigPath(".")
 	configViper.SetDefault("update_interval", 120)
 	configViper.SetDefault("repos_path", "repos")
 	err = configViper.ReadInConfig()
-	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}){
+	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
 		return
 	}
 	err = configViper.Unmarshal(&Configs)
