@@ -3,6 +3,7 @@ package swarmcd
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"sync"
@@ -11,7 +12,26 @@ import (
 	"github.com/docker/cli/cli/flags"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/m-adawi/swarm-cd/util"
 )
+
+type StackStatus struct {
+	Error string
+	Revision string
+	RepoURL string
+}
+
+var repoLocks map[string]*sync.Mutex = make(map[string]*sync.Mutex)
+
+var stackStatus map[string]*StackStatus = map[string]*StackStatus{}
+
+var config *util.Config = &util.Configs
+
+var logger *slog.Logger = util.Logger
+
+var repos map[string]*git.Repository = make(map[string]*git.Repository)
+
+var dockerCli *command.DockerCli
 
 func Init() (err error ) {
 	err = initRepos()
