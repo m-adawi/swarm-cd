@@ -7,6 +7,7 @@ on:
       - "go.mod"
       - "go.sum"
       - "Dockerfile"
+  workflow_dispatch:  
 
 
 jobs:
@@ -42,10 +43,27 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       
       - name: Push docker image
         uses: docker/build-push-action@v6
         if: ${{ github.ref_name == 'main' && steps.release.outputs.new_release_published == 'true' }}
         with:
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest, ghcr.io/${{ github.repository }}:${{ steps.release.outputs.new_release_version }}
+          tags: |
+            ${{ vars.DOCKERHUB_USERNAME }}/swarm-cd:latest
+            ${{ vars.DOCKERHUB_USERNAME }}/swarm-cd:${{ steps.release.outputs.new_release_version }}
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ steps.release.outputs.new_release_version }}
+
+      - name: Update Docker Hub repo description
+        uses: peter-evans/dockerhub-description@e98e4d1628a5f3be2be7c231e50981aee98723ae # v4.0.0
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ vars.DOCKERHUB_USERNAME }}/swarm-cd
