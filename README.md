@@ -54,7 +54,6 @@ docker stack deploy --compose-file docker-compose.yaml swarm-cd
 This will start SwarmCD, it will periodically check the stack repo
 for new changes, pulling them and updating the stack.
 
-You can find the files used in this example in [example/](example/) directory
 
 # Manage Encrypted Secrets Using SOPS
 You can use [sops](https://github.com/getsops/sops) to encrypt secrets in git repos and 
@@ -111,5 +110,5 @@ the stack.
 
 
 # Documentation
-See [docs](docs/).
+See [docs](https://github.com/m-adawi/swarm-cd/blob/main/docs).
 
