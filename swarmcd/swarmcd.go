@@ -9,7 +9,6 @@ import (
 	"github.com/docker/cli/cli/command/stack"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/m-adawi/swarm-cd/util"
 )
 
@@ -68,7 +67,6 @@ func updateStack(stackName string) (revision string, err error) {
 
 func pullChanges(stackName string) (revision string, err error) {
 	stackConfig := config.StackConfigs[stackName]
-	repoConfig := config.RepoConfigs[stackConfig.Repo]
 	branch := stackConfig.Branch
 	repo := repos[stackConfig.Repo]
 	
@@ -88,15 +86,17 @@ func pullChanges(stackName string) (revision string, err error) {
 	pullOptions := &git.PullOptions{
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		RemoteName: "origin",
+		Auth: repoAuth[stackConfig.Repo],
 	}
-	if repoConfig.Password != "" && repoConfig.Username != "" {
-		pullOptions.Auth = &http.BasicAuth{
-			Username: repoConfig.Username,
-			Password: repoConfig.Password,
-		}
-	}
+
 	err = workTree.Pull(pullOptions)
 	if err != nil {
+		// we get this error when provided creds are invalid
+		// which can mislead users into thinking they 
+		// haven't provided creds correctly
+		if err.Error() == "authentication required" {
+			err = fmt.Errorf("authentication failed")
+		}
 		return "", fmt.Errorf("could not pull %s branch in %s repo: %w", branch, stackConfig.Repo,  err)
 	}
 	

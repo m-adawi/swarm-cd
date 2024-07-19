@@ -15,9 +15,10 @@ type StackConfig struct {
 }
 
 type RepoConfig struct {
-	Url      string
-	Username string
-	Password string
+	Url          string
+	Username     string
+	Password     string
+	PasswordFile string `mapstructure:"password_file"`
 }
 
 type Config struct {
