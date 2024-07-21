@@ -24,6 +24,7 @@ type RepoConfig struct {
 type Config struct {
 	ReposPath      string                  `mapstructure:"repos_path"`
 	UpdateInterval int                     `mapstructure:"update_interval"`
+	AutoRotate     bool                    `mapstructure:"auto_rotate"`
 	StackConfigs   map[string]*StackConfig `mapstructure:"stacks"`
 	RepoConfigs    map[string]*RepoConfig  `mapstructure:"repos"`
 }
@@ -56,6 +57,7 @@ func readConfig() (err error) {
 	configViper.AddConfigPath(".")
 	configViper.SetDefault("update_interval", 120)
 	configViper.SetDefault("repos_path", "repos")
+	configViper.SetDefault("auto_rotate", true)
 	err = configViper.ReadInConfig()
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
 		return

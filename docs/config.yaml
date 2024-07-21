@@ -7,6 +7,11 @@ update_interval: 120
 # The path where SwarmCD will checkout repos
 repos_path: repos/
 
+# Automatically rotate configs and secrets
+# when the change. Adds a hash to config
+# and secret names
+auto_rotate: true
+
 # You can define repos here instead of 
 # defining a separate repos.yaml file
 repos:
