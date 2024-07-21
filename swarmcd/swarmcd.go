@@ -1,7 +1,9 @@
 package swarmcd
 
 import (
+	"crypto/md5"
 	"fmt"
+	"os"
 	"path"
 	"sync"
 	"time"
@@ -9,6 +11,7 @@ import (
 	"github.com/docker/cli/cli/command/stack"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/goccy/go-yaml"
 	"github.com/m-adawi/swarm-cd/util"
 )
 
@@ -56,6 +59,11 @@ func updateStack(stackName string) (revision string, err error) {
 	err = decryptSopsFiles(stackName)
 	if err != nil {
 		return "", fmt.Errorf("failed to decrypt one or more sops files for %s stack: %w", stackName, err)
+	}
+
+	err = rotateConfigsAndSecrets(stackName) 
+	if err != nil {
+		return
 	}
 
 	err = deployStack(stackName) 
@@ -135,6 +143,65 @@ func deployStack(stackName string) error {
 	err := cmd.Execute()
 	if err != nil {
 		return fmt.Errorf("could not deploy stack %s: %s", stackName, err.Error())
+	}
+	return nil
+}
+
+
+
+func rotateConfigsAndSecrets(stackName string) error {
+	stackConfig := config.StackConfigs[stackName]
+	composeFile := path.Join(config.ReposPath, stackConfig.Repo, stackConfig.ComposeFile)
+	composeFileBytes, err := os.ReadFile(composeFile)
+	if err != nil {
+		return fmt.Errorf("could not read compose file %s: %w", composeFile, err)
+	}
+	var composeMap map[string]any
+	err = yaml.Unmarshal(composeFileBytes, &composeMap)
+	if err != nil {
+		return fmt.Errorf("could not parse yaml file %s: %w", composeFile, err)
+	}
+	
+	composeDir := path.Dir(composeFile)
+	if configs, ok := composeMap["configs"].(map[string]any); ok {
+		err = rotateObjects(configs, composeDir, stackName)
+		if err != nil{
+			return fmt.Errorf("could not rotate one or more config files of stack %s: %w", stackName, err)
+		}
+	}
+	if secrets, ok := composeMap["secrets"].(map[string]any); ok {
+		err = rotateObjects(secrets, composeDir, stackName)
+		if err != nil{
+			return fmt.Errorf("could not rotate one or more secret files of stack %s: %w", stackName, err)
+		}
+	}
+	
+	composeFileBytes, err = yaml.Marshal(composeMap)
+	if err != nil {
+		return fmt.Errorf("could not store comopse file as yaml after calculating hashes for stack %s", stackName)
+	}
+	fileInfo, _ := os.Stat(composeFile)
+	os.WriteFile(composeFile, composeFileBytes, fileInfo.Mode())
+	return nil
+}
+
+func rotateObjects(objects map[string]any, objectsDir string, stackName string) error {
+	for objectName, object := range objects {
+		objectMap, ok := object.(map[string]any)
+		if !ok {
+			return fmt.Errorf("invalid compose file: %s object must be a map", objectName)
+		}
+		objectFile, ok := objectMap["file"].(string)
+		if !ok {
+			return fmt.Errorf("invalid compose file: %s file field must be a string", objectName)
+		}
+		objectFilePath := path.Join(objectsDir, objectFile)
+		configFileBytes, err := os.ReadFile(objectFilePath)
+		if err != nil {
+			return fmt.Errorf("could not read file %s for rotation: %w", objectFilePath, err)
+		}
+		hash := fmt.Sprintf("%x", md5.Sum(configFileBytes))[:8]
+		objectMap["name"] = stackName + "-" + objectName + "-" + hash
 	}
 	return nil
 }
