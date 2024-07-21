@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
-	"google.golang.org/grpc/xds/bootstrap"
 )
 
 type StackConfig struct {
