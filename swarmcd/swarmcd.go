@@ -44,6 +44,7 @@ func updateStackThread(swarmStack *swarmStack, waitGroup *sync.WaitGroup) {
 }
 
 
+
 func GetStackStatus() map[string]*StackStatus {
 	return stackStatus
 }

@@ -13,5 +13,13 @@ stack-name:
   branch: main
   # The path to the docker compose file where stack
   # is defined
-  compose_file: compose.yaml
+  compose_file: /path/to/compose.yaml
+  # Path to values file to use when rendering
+  # compose file as a Go template. If empty, compose
+  # file will be treated as a regular compose file 
+  values_file: /path/to/values.yaml
+  # Paths to files encrypted using sops to decrypt
+  # before updating stack
+  sops_files:
+    - path/to/sops/encrypted/file
 

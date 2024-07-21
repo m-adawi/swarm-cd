@@ -98,7 +98,7 @@ func initStacks() error {
 		if !ok {
 			return fmt.Errorf("error initializing %s stack, no such repo: %s", stack, stackConfig.Repo)
 		}
-		swarmStack := newSwarmStack(stack, stackRepo, stackConfig.Branch, stackConfig.ComposeFile, stackConfig.SopsFiles)
+		swarmStack := newSwarmStack(stack, stackRepo, stackConfig.Branch, stackConfig.ComposeFile, stackConfig.SopsFiles, stackConfig.ValuesFile)
 		stacks = append(stacks, swarmStack)
 		stackStatus[stack] = &StackStatus{}
 		stackStatus[stack].RepoURL = stackRepo.url
