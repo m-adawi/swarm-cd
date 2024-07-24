@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"text/template"
 
 	"github.com/docker/cli/cli/command/stack"
 	"github.com/go-git/go-git/v5"
@@ -18,17 +19,17 @@ type swarmStack struct {
 	branch      string
 	composePath string
 	sopsFiles   []string
-	status *StackStatus
+	valuesFile  string
 }
 
-func newSwarmStack(name string, repo *stackRepo, branch string, composePath string, sopsFiles []string) *swarmStack {
+func newSwarmStack(name string, repo *stackRepo, branch string, composePath string, sopsFiles []string, valuesFile string) *swarmStack {
 	return &swarmStack{
 		name:        name,
 		repo:        repo,
 		branch:      branch,
 		composePath: composePath,
 		sopsFiles:   sopsFiles,
-		status: &StackStatus{},
+		valuesFile: valuesFile,
 	}
 }
 
@@ -42,6 +43,13 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	err = swarmStack.decryptSopsFiles()
 	if err != nil {
 		return "", fmt.Errorf("failed to decrypt one or more sops files for %s stack: %w", swarmStack.name, err)
+	}
+
+	if swarmStack.valuesFile != "" {
+		err = swarmStack.renderComposeTemplate() 
+		if err != nil {
+			return
+		}
 	}
 
 	err = swarmStack.rotateConfigsAndSecrets() 
@@ -140,3 +148,26 @@ func (swarmStack *swarmStack) rotateObjects(objects map[string]any) error {
 	return nil
 }
 
+func (swarmStack *swarmStack) renderComposeTemplate() error {
+	composeFile := path.Join(config.ReposPath, swarmStack.repo.path, swarmStack.composePath)
+	valuesFile := path.Join(config.ReposPath, swarmStack.repo.path, swarmStack.valuesFile)
+	valuesBytes, err := os.ReadFile(valuesFile)
+	if err != nil {
+		return fmt.Errorf("could not read %s stack values file: %w", swarmStack.name, err)
+	}
+	var valuesMap map[string]any 
+	yaml.Unmarshal(valuesBytes, &valuesMap) 
+	templ, err := template.New(path.Base(composeFile)).ParseFiles(composeFile)
+	if err != nil {
+		return fmt.Errorf("could not parse %s stack compose file as a Go template: %w", swarmStack.name, err)
+	}
+	composeFileWriter, err := os.Create(composeFile)
+	if err != nil {
+		return fmt.Errorf("could not open %s stack compose file: %w", swarmStack.name, err)
+	}
+	err = templ.Execute(composeFileWriter, map[string]map[string]any{"Values": valuesMap})
+	if err != nil {
+		return fmt.Errorf("error rending %s stack compose template: %w", swarmStack.name, err)
+	}
+	return nil
+}
