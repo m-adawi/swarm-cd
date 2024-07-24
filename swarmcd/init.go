@@ -1,17 +1,14 @@
 package swarmcd
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"path"
 	"strings"
-	"sync"
 
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
-	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/m-adawi/swarm-cd/util"
 )
@@ -22,17 +19,12 @@ type StackStatus struct {
 	RepoURL  string
 }
 
-var repoLocks map[string]*sync.Mutex = make(map[string]*sync.Mutex)
-
-var stackStatus map[string]*StackStatus = map[string]*StackStatus{}
 
 var config *util.Config = &util.Configs
 
 var logger *slog.Logger = util.Logger
 
-var repos map[string]*git.Repository = make(map[string]*git.Repository)
-
-var repoAuth map[string]*http.BasicAuth = make(map[string]*http.BasicAuth)
+var repos map[string]*stackRepo = map[string]*stackRepo{}
 
 var dockerCli *command.DockerCli
 
@@ -52,41 +44,18 @@ func Init() (err error) {
 	return
 }
 
-func initRepos() (err error) {
+func initRepos() (error) {
 	for repoName, repoConfig := range config.RepoConfigs {
 		repoPath := path.Join(config.ReposPath, repoName)
-		var repo *git.Repository
-		cloneOptions := &git.CloneOptions{
-			URL:   repoConfig.Url,
-			Depth: 1,
-		}
-		repoAuth[repoName], err = createHTTPBasicAuth(repoName)
+		auth, err := createHTTPBasicAuth(repoName)
 		if err != nil {
-			return
+			return err
 		}
-		cloneOptions.Auth = repoAuth[repoName]
-		repo, err = git.PlainClone(repoPath, false, cloneOptions)
-
+		repos[repoName], err = newStackRepo(repoName, repoPath, repoConfig.Url, auth)
 		if err != nil {
-			if errors.Is(err, git.ErrRepositoryAlreadyExists) {
-				repo, err = git.PlainOpen(repoPath)
-				if err != nil {
-					return fmt.Errorf("could not open existing repo %s: %w", repoName, err)
-				}
-			} else {
-				// we get this error when provided creds are invalid
-				// which can mislead users into thinking they
-				// haven't provided creds correctly
-				if err.Error() == "authentication required" {
-					err = fmt.Errorf("authentication failed")
-				}
-				return fmt.Errorf("could not clone repo %s: %w", repoName, err)
-			}
+			return err
 		}
-		repos[repoName] = repo
-		repoLocks[repoName] = &sync.Mutex{}
 	}
-
 	return nil
 }
 
@@ -125,12 +94,14 @@ func createHTTPBasicAuth(repoName string) (*http.BasicAuth, error) {
 
 func initStacks() error {
 	for stack, stackConfig := range config.StackConfigs {
-		stackStatus[stack] = &StackStatus{}
-		repoConfig, ok := config.RepoConfigs[stackConfig.Repo]
+		stackRepo, ok := repos[stackConfig.Repo]
 		if !ok {
 			return fmt.Errorf("error initializing %s stack, no such repo: %s", stack, stackConfig.Repo)
 		}
-		stackStatus[stack].RepoURL = repoConfig.Url
+		swarmStack := newSwarmStack(stack, stackRepo, stackConfig.Branch, stackConfig.ComposeFile, stackConfig.SopsFiles)
+		stacks = append(stacks, swarmStack)
+		stackStatus[stack] = &StackStatus{}
+		stackStatus[stack].RepoURL = stackRepo.url
 	}
 	return nil
 }
