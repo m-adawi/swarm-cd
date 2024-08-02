@@ -4,8 +4,15 @@ A declarative GitOps and Continuous Deployment tool for Docker Swarm.
 
 Inspired by [ArgoCD](https://argo-cd.readthedocs.io/en/stable/). 
 
+Features:
+- [**GitOps:**](#basic-usage) Host your Swarm stacks, configs, and secrets in a Git repo and SwarmCD will automatically deploy new changes
+- [**Encrypted Secrets:**](#encrypt-secrets-using-sops) Encrypt your secrets using [SOPS](https://github.com/getsops/sops) and configure SwarmCD to decrypt them before deployment
+- [**Automatic Rotation of Configs and Secrets:**](#automatically-rotate-configs-and-secrets) You don't need to rename your configs or secrets every time you change them
+- [**Templating:**](#templating) Define stack templates and fill them with different values for different environments, similar to [helm](https://helm.sh/)
 
-# Usage
+
+
+## Basic Usage
 In this example, we use SwarmCD to deploy the stack in the repo 
 [swarm-cd-example](https://github.com/m-adawi/swarm-cd-example) to a docker swarm cluster.
 
@@ -55,7 +62,7 @@ This will start SwarmCD, it will periodically check the stack repo
 for new changes, pulling them and updating the stack.
 
 
-# Manage Encrypted Secrets Using SOPS
+## Encrypt Secrets Using SOPS
 You can use [sops](https://github.com/getsops/sops) to encrypt secrets in git repos and 
 have SwarmCD decrypt them before deploying or updating your stacks.
 
@@ -109,6 +116,17 @@ This way, SwarmCD will decrypt the files each time before it updates
 the stack.
 
 
-# Documentation
+## Automatically Rotate Configs and Secrets
+
+In the official docker swarm docs, the recommended method to rotate a config or a secret is by creating a new object with a new name, deleting the old one and making the docker service use the new one, as in [this](https://docs.docker.com/engine/swarm/configs/#example-rotate-a-config) and [this](https://docs.docker.com/engine/swarm/secrets/#example-rotate-a-secret). SwarmCD does this automatically by renaming the config or secret object by appending a short hash to it. This hash is calculated using md5 and its value will be different for different file contents. You can disable this behavior be setting `auto_rotate` property in [config.yaml](docs/config.yaml) file to `false`, which means you would have to manually rename the object in stack defenition every time you change it.
+
+
+
+
+## Templating
+
+
+
+## Documentation
 See [docs](https://github.com/m-adawi/swarm-cd/blob/main/docs).
 
