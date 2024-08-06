@@ -1,12 +1,12 @@
 # SwarmCD
 
-A declarative GitOps and Continuous Deployment tool for Docker Swarm. 
+A declarative GitOps and Continuous Deployment tool for Docker Swarm.
 
-Inspired by [ArgoCD](https://argo-cd.readthedocs.io/en/stable/). 
+Inspired by [ArgoCD](https://argo-cd.readthedocs.io/en/stable/).
 
+## Usage
 
-# Usage
-In this example, we use SwarmCD to deploy the stack in the repo 
+In this example, we use SwarmCD to deploy the stack in the repo
 [swarm-cd-example](https://github.com/m-adawi/swarm-cd-example) to a docker swarm cluster.
 
 First we add the repo to the file `repos.yaml`
@@ -27,8 +27,8 @@ nginx:
   compose_file: nginx/compose.yaml
 ```
 
-And finally, we deploy SwarmCD to the cluster 
-using the following docker-compose file: 
+And finally, we deploy SwarmCD to the cluster
+using the following docker-compose file:
 
 ```yaml
 # docker-compose.yaml
@@ -47,6 +47,7 @@ services:
 ```
 
 Run this on a swarm manager node:
+
 ```bash
 docker stack deploy --compose-file docker-compose.yaml swarm-cd
 ```
@@ -55,14 +56,15 @@ This will start SwarmCD, it will periodically check the stack repo
 for new changes, pulling them and updating the stack.
 
 
-# Manage Encrypted Secrets Using SOPS
-You can use [sops](https://github.com/getsops/sops) to encrypt secrets in git repos and 
+## Manage Encrypted Secrets Using SOPS
+
+You can use [sops](https://github.com/getsops/sops) to encrypt secrets in git repos and
 have SwarmCD decrypt them before deploying or updating your stacks.
 
-The stack `nginx-ssl` in the 
-[example repo](https://github.com/m-adawi/swarm-cd-example) 
+The stack `nginx-ssl` in the
+[example repo](https://github.com/m-adawi/swarm-cd-example)
 has two secret files under `nginx-ssl/secrets/` directory.
-You can configure SwarmCD files to decrypt them by 
+You can configure SwarmCD files to decrypt them by
 setting the property`sops_files` in a stack defenition.
 
 ```yaml
@@ -75,10 +77,11 @@ nginx-ssl:
       - nginx-ssl/secrets/www.example.com.crt
       - nginx-ssl/secrets/www.example.com.key
 ```
+
 Then you need to set the SOPS environment variables that are required
-to decrypt the files. 
-For example, if you used [age](https://github.com/FiloSottile/age) 
-to encrypt them, you have to mount the age key file to SwarmCD 
+to decrypt the files.
+For example, if you used [age](https://github.com/FiloSottile/age)
+to encrypt them, you have to mount the age key file to SwarmCD
 and set the environment variable SOPS `SOPS_AGE_KEY_FILE`
 to the path of the key file. See the following docker-compose example
 
@@ -108,7 +111,6 @@ secrets:
 This way, SwarmCD will decrypt the files each time before it updates
 the stack.
 
+## Documentation
 
-# Documentation
-See [docs](https://github.com/m-adawi/swarm-cd/blob/main/docs).
-
+See [docs](docs/).
