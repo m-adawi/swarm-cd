@@ -129,7 +129,6 @@ In the official docker swarm docs, the recommended method to rotate a config or 
 
 
 
-## Documentation
 ## Connect SwarmCD to a remote docker socket
 
 You can use the `DOCKER_HOST` environment variable to point SwarmCD to a remote docker socket,
