@@ -163,4 +163,4 @@ configs:
 
 ## Documentation
 
-See [docs](docs/).
+See [docs](https://github.com/m-adawi/swarm-cd/blob/main/docs).
