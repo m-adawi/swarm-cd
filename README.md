@@ -111,51 +111,15 @@ secrets:
 This way, SwarmCD will decrypt the files each time before it updates
 the stack.
 
-## Deploy SwarmCD to a remote docker swarm
+## Connect SwarmCD to a remote docker socket
 
-To be able to deploy SwarmCD to a remote swarm wihtout having to ssh and move the config files to it,
-you can use swarm's `configs` instead of bount mounting the files:
+You can use the `DOCKER_HOST` environment variable to point SwarmCD to a remote docker socket,
+be it in the same swarm or a different host.
 
-```yaml
----
-version: '3.7'
-
-services:
-  swarm-cd:
-    image: ghcr.io/m-adawi/swarm-cd:1.1.0
-    volumes: 
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    configs:
-      - source: stacks
-        target: /app/stacks.yaml
-        mode: 0400
-      - source: repos
-        target: /app/repos.yaml
-        mode: 0400
-
-configs:
-  stacks:
-    file: ./stacks.yaml
-  repos:
-    file: ./repos.yaml
-```
-
-Then you can set the `DOCKER_HOST` environment variable to point to the swarm:
-
-```shell
-DOCKER_HOST=ssh://user@remote-machine docker stack deploy --compose-file docker-compose.yaml swarm-cd
-```
-
-## Secure the Docker socket
-
-To avoid potential root user access to the host (or the entire swarm) through the docker socket,
-you can levarage [docker-socket-proxy](https://github.com/Tecnativa/docker-socket-proxy).
-It allows you to give access only to the strictly needed docker API endpoints.
-Only the proxy will need to be hosted on a manager node,
-and SwarmCD will connect to it by setting its `DOCKER_HOST` environment variable.
+In the following example `docker-socket-proxy` talks directly to the host socket proxy,
+and SwarmCD connects to it:
 
 ```yaml
----
 version: '3.7'
 
 services:
