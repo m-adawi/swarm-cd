@@ -26,14 +26,13 @@ func DecryptFile(filepath string) (err error) {
 	return
 }
 
-
 func getFileFormat(filename string) string {
 	extension := filepath.Ext(filename)
-	if extension == "yaml" || extension == "yml"{
+	if extension == ".yaml" || extension == ".yml" {
 		return "yaml"
-	} else if extension == "json" {
+	} else if extension == ".json" {
 		return "json"
-	} else if extension == "ini" {
+	} else if extension == ".ini" {
 		return "ini"
 	} else {
 		return "binary"
