@@ -18,6 +18,7 @@ swarm-cd-ui/
 ├── src/                   # Source files
 │   ├── assets/            # Images, fonts, etc.
 │   ├── components/        # React components
+│   ├── hooks/             # React hooks
 │   ├── App.tsx            # Main App component
 │   ├── index.tsx          # Entry point
 ├── package.json           # Project metadata and scripts

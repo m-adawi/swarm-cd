@@ -1,35 +1,27 @@
-import { ChakraProvider, Container } from "@chakra-ui/react";
-import { useState } from "react";
-import StatusCard from "./components/StatusCard";
-import useFetchStack from "./hooks/useFetchStacks";
-
-interface StackStatus {
-  Name: string;
-  Error: string;
-  Revision: string;
-  RepoURL: string;
-}
+import { Container, Text } from "@chakra-ui/react"
+import React, { useState } from "react"
+import HeaderBar from "./components/HeaderBar"
+import StatusCardList from "./components/StatusCardList"
+import useFetchStatuses from "./hooks/useFetchStatuses"
 
 function App(): React.ReactElement {
-  const [stacks, setStacks] = useState<StackStatus[]>([]);
-
-  useFetchStack(setStacks);
+  const { stacks, error } = useFetchStatuses()
+  const [searchQuery, setSearchQuery] = useState("")
 
   return (
-    <ChakraProvider>
-      <Container maxW="container.md" mt={4}>
-        {stacks.map((item, index) => (
-          <StatusCard
-            key={index}
-            name={item.Name}
-            error={item.Error}
-            revision={item.Revision}
-            repoURL={item.RepoURL}
-          />
-        ))}
+    <>
+      <Container maxW="container.lg" mt={4}>
+        <HeaderBar onQueryChange={query => setSearchQuery(query)} />
+        {error !== null ? (
+          <Text fontSize="xl" align="center">
+            {error}
+          </Text>
+        ) : (
+          <StatusCardList statuses={stacks} query={searchQuery} />
+        )}
       </Container>
-    </ChakraProvider>
-  );
+    </>
+  )
 }
 
-export default App;
+export default App
