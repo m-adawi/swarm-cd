@@ -8,6 +8,7 @@ import (
 	"text/template"
 
 	"github.com/docker/cli/cli/command/stack"
+	"github.com/go-git/go-git/v5"
 	// "github.com/go-git/go-git/v5"
 	"github.com/goccy/go-yaml"
 	"github.com/m-adawi/swarm-cd/util"
@@ -36,10 +37,10 @@ type composeObject struct {
 
 
 func (swarmStack *swarmStack) updateStack() (revision string, err error) {
-	// revision, err = swarmStack.repo.pullChanges(swarmStack.branch)
-	// if err != nil && err != git.NoErrAlreadyUpToDate {
-	// 	return
-	// }
+	revision, err = swarmStack.repo.pullChanges(swarmStack.branch)
+	if err != nil && err != git.NoErrAlreadyUpToDate {
+		return
+	}
 
 	err = swarmStack.decryptSopsFiles()
 	if err != nil {
@@ -47,22 +48,22 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 
 	if swarmStack.valuesFile != "" {
-		err = swarmStack.renderAllTemplates() 
+		err = swarmStack.renderAllTemplates()
 		if err != nil {
 			return
 		}
 	}
 
-	err = swarmStack.rotateConfigsAndSecrets() 
+	err = swarmStack.rotateConfigsAndSecrets()
 	if err != nil {
 		return
 	}
 
-	err = swarmStack.deployStack() 
+	err = swarmStack.deployStack()
 	if err != nil {
 		return
 	}
-	return 
+	return
 }
 
 func (swarmStack *swarmStack) decryptSopsFiles() (err error) {
