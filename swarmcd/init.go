@@ -95,12 +95,29 @@ func createHTTPBasicAuth(repoName string) (*http.BasicAuth, error) {
 func initStacks() error {
 	for stack, stackConfig := range config.StackConfigs {
 		stackRepo, ok := repos[stackConfig.Repo]
-		composePath := path.Join(stackRepo.path, stackConfig.ComposeFile)
-		valuesFilePath := path.Join(stackRepo.path, stackConfig.ValuesFile)
+		var stackDir string
+		if stackConfig.Dir != "" {
+			stackDir = path.Join(stackRepo.path, stackConfig.Dir)
+		} else {
+			stackDir = path.Dir(stackConfig.ComposeFile)
+		}
+		composePath := path.Join(stackDir, stackConfig.ComposeFile)
+		valuesFilePath := ""
+		if stackConfig.ValuesFile != "" {
+			valuesFilePath = path.Join(stackRepo.path, stackConfig.ValuesFile)
+		}
 		if !ok {
 			return fmt.Errorf("error initializing %s stack, no such repo: %s", stack, stackConfig.Repo)
 		}
-		swarmStack := newSwarmStack(stack, stackRepo, stackConfig.Branch, composePath, stackConfig.SopsFiles, valuesFilePath)
+		swarmStack := &swarmStack{
+			name:        stack,
+			repo:        stackRepo,
+			dir: 		 stackDir,
+			branch:      stackConfig.Branch,
+			composePath: composePath,
+			sopsFiles:   stackConfig.SopsFiles,
+			valuesFile:  valuesFilePath,
+		}
 		stacks = append(stacks, swarmStack)
 		stackStatus[stack] = &StackStatus{}
 		stackStatus[stack].RepoURL = stackRepo.url
