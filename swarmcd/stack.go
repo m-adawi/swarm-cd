@@ -9,28 +9,30 @@ import (
 
 	"github.com/docker/cli/cli/command/stack"
 	"github.com/go-git/go-git/v5"
+	// "github.com/go-git/go-git/v5"
 	"github.com/goccy/go-yaml"
 	"github.com/m-adawi/swarm-cd/util"
 )
 
 type swarmStack struct {
-	name        string
-	repo        *stackRepo
-	branch      string
-	composePath string
-	sopsFiles   []string
-	valuesFile  string
+	name            string
+	repo            *stackRepo
+	branch          string
+	dir 			string
+	composePath     string
+	sopsFiles       []string
+	composeTemplate string
+	valuesFile      string
 }
 
-func newSwarmStack(name string, repo *stackRepo, branch string, composePath string, sopsFiles []string, valuesFile string) *swarmStack {
-	return &swarmStack{
-		name:        name,
-		repo:        repo,
-		branch:      branch,
-		composePath: composePath,
-		sopsFiles:   sopsFiles,
-		valuesFile: valuesFile,
-	}
+type composeDataObject struct {
+	File string
+	Name string
+}
+
+type composeObject struct {
+	Configs map[string]*composeDataObject
+	Secrets map[string]*composeDataObject
 }
 
 
@@ -46,22 +48,22 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 
 	if swarmStack.valuesFile != "" {
-		err = swarmStack.renderComposeTemplate() 
+		err = swarmStack.renderAllTemplates()
 		if err != nil {
 			return
 		}
 	}
 
-	err = swarmStack.rotateConfigsAndSecrets() 
+	err = swarmStack.rotateConfigsAndSecrets()
 	if err != nil {
 		return
 	}
 
-	err = swarmStack.deployStack() 
+	err = swarmStack.deployStack()
 	if err != nil {
 		return
 	}
-	return 
+	return
 }
 
 func (swarmStack *swarmStack) decryptSopsFiles() (err error) {
@@ -78,10 +80,10 @@ func (swarmStack *swarmStack) deployStack() error {
 	cmd := stack.NewStackCommand(dockerCli)
 	cmd.SetArgs([]string{
 		"deploy", "--detach", "--with-registry-auth", "-c",
-		path.Join(swarmStack.repo.path, swarmStack.composePath),
+		swarmStack.composePath,
 		swarmStack.name,
 	})
-	// To stop printing errors and 
+	// To stop printing errors and
 	// usage message to stdout
 	cmd.SilenceErrors = true
 	cmd.SilenceUsage = true
@@ -93,81 +95,110 @@ func (swarmStack *swarmStack) deployStack() error {
 }
 
 func (swarmStack *swarmStack) rotateConfigsAndSecrets() error {
-	composeFile := path.Join(swarmStack.repo.path, swarmStack.composePath)
-	composeFileBytes, err := os.ReadFile(composeFile)
+	composeObject, composeMap, err := swarmStack.readComposeFile()
 	if err != nil {
-		return fmt.Errorf("could not read compose file %s: %w", composeFile, err)
+		return err
 	}
-	var composeMap map[string]any
-	err = yaml.Unmarshal(composeFileBytes, &composeMap)
-	if err != nil {
-		return fmt.Errorf("could not parse yaml file %s: %w", composeFile, err)
-	}
-	
-	if configs, ok := composeMap["configs"].(map[string]any); ok {
-		err = swarmStack.rotateObjects(configs)
-		if err != nil{
-			return fmt.Errorf("could not rotate one or more config files of stack %s: %w", swarmStack.name, err)
+
+	if composeObject.Configs != nil {
+		err = swarmStack.rotateObjects(composeObject.Configs)
+		if err != nil {
+			return fmt.Errorf("could not rotate one or more configs of stack %s: %w", swarmStack.name, err)
 		}
+		composeMap["configs"] = composeObject.Configs
 	}
-	if secrets, ok := composeMap["secrets"].(map[string]any); ok {
-		err = swarmStack.rotateObjects(secrets)
-		if err != nil{
-			return fmt.Errorf("could not rotate one or more secret files of stack %s: %w", swarmStack.name, err)
+
+	if composeObject.Secrets != nil {
+		err = swarmStack.rotateObjects(composeObject.Secrets)
+		if err != nil {
+			return fmt.Errorf("could not rotate one or more secrets of stack %s: %w", swarmStack.name, err)
 		}
+		composeMap["secrets"] = composeObject.Secrets
 	}
-	
-	composeFileBytes, err = yaml.Marshal(composeMap)
+
+	composeFileBytes, err := yaml.Marshal(composeMap)
 	if err != nil {
-		return fmt.Errorf("could not store comopse file as yaml after calculating hashes for stack %s", swarmStack.name)
+		return fmt.Errorf("could not store comopse file as yaml after rotating objects for stack %s", swarmStack.name)
 	}
-	fileInfo, _ := os.Stat(composeFile)
-	os.WriteFile(composeFile, composeFileBytes, fileInfo.Mode())
+	fileInfo, _ := os.Stat(swarmStack.composePath)
+	os.WriteFile(swarmStack.composePath, composeFileBytes, fileInfo.Mode())
 	return nil
 }
 
-func (swarmStack *swarmStack) rotateObjects(objects map[string]any) error {
-	objectsDir := path.Dir(path.Join(swarmStack.repo.path, swarmStack.composePath))
+func (swarmStack *swarmStack) readComposeFile() (object *composeObject, composeMap map[string]any, err error) {
+	composeFileBytes, err := os.ReadFile(swarmStack.composePath)
+	if err != nil {
+		err = fmt.Errorf("could not read compose file %s: %w", swarmStack.composePath, err)
+		return
+	}
+	err = yaml.Unmarshal(composeFileBytes, &composeMap)
+	if err != nil {
+		err = fmt.Errorf("could not parse yaml file %s: %w", swarmStack.composePath, err)
+		return
+	}
+	var finalObject composeObject
+	err = yaml.Unmarshal(composeFileBytes, &finalObject)
+	if err != nil {
+		err = fmt.Errorf("could unmarshal yaml file %s into compose object: %w", swarmStack.composePath, err)
+		return
+	}
+	object = &finalObject
+	return
+}
+
+func (swarmStack *swarmStack) rotateObjects(objects map[string]*composeDataObject) error {
 	for objectName, object := range objects {
-		objectMap, ok := object.(map[string]any)
-		if !ok {
-			return fmt.Errorf("invalid compose file: %s object must be a map", objectName)
-		}
-		objectFile, ok := objectMap["file"].(string)
-		if !ok {
-			return fmt.Errorf("invalid compose file: %s file field must be a string", objectName)
-		}
-		objectFilePath := path.Join(objectsDir, objectFile)
+		objectFilePath := path.Join(swarmStack.dir, object.File)
 		configFileBytes, err := os.ReadFile(objectFilePath)
 		if err != nil {
 			return fmt.Errorf("could not read file %s for rotation: %w", objectFilePath, err)
 		}
 		hash := fmt.Sprintf("%x", md5.Sum(configFileBytes))[:8]
-		objectMap["name"] = swarmStack.name + "-" + objectName + "-" + hash
+		object.Name = swarmStack.name + "-" + objectName + "-" + hash
 	}
 	return nil
 }
 
-func (swarmStack *swarmStack) renderComposeTemplate() error {
-	composeFile := path.Join(config.ReposPath, swarmStack.repo.path, swarmStack.composePath)
-	valuesFile := path.Join(config.ReposPath, swarmStack.repo.path, swarmStack.valuesFile)
-	valuesBytes, err := os.ReadFile(valuesFile)
+func (swarmStack *swarmStack) renderAllTemplates() error {
+	err := swarmStack.renderTemplate(swarmStack.composePath)
+	if err != nil {
+		return err
+	}
+	composeObject, _, err := swarmStack.readComposeFile()
+	if err != nil {
+		return err
+	}
+
+	if composeObject.Configs != nil {
+		for _, config := range composeObject.Configs {
+			configPath := path.Join(path.Dir(swarmStack.composePath), config.File)
+			err = swarmStack.renderTemplate(configPath)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (swarmStack *swarmStack) renderTemplate(filepath string) error {
+	valuesBytes, err := os.ReadFile(swarmStack.valuesFile)
 	if err != nil {
 		return fmt.Errorf("could not read %s stack values file: %w", swarmStack.name, err)
 	}
-	var valuesMap map[string]any 
-	yaml.Unmarshal(valuesBytes, &valuesMap) 
-	templ, err := template.New(path.Base(composeFile)).ParseFiles(composeFile)
+	var valuesMap map[string]any
+	yaml.Unmarshal(valuesBytes, &valuesMap)
+	templ, err := template.New(path.Base(filepath)).ParseFiles(filepath)
 	if err != nil {
-		return fmt.Errorf("could not parse %s stack compose file as a Go template: %w", swarmStack.name, err)
+		return fmt.Errorf("could not parse %s stack file %s as a Go template: %w", swarmStack.name, filepath, err)
 	}
-	composeFileWriter, err := os.Create(composeFile)
+	composeFileWriter, err := os.Create(filepath)
 	if err != nil {
-		return fmt.Errorf("could not open %s stack compose file: %w", swarmStack.name, err)
+		return fmt.Errorf("could not open %s stack file %s: %w", swarmStack.name, filepath, err)
 	}
-	err = templ.Execute(composeFileWriter, map[string]map[string]any{"Values": valuesMap})
+	err = templ.Execute(composeFileWriter, map[string]any{"Values": valuesMap, "StackDir": swarmStack.dir})
 	if err != nil {
-		return fmt.Errorf("error rending %s stack compose template: %w", swarmStack.name, err)
+		return fmt.Errorf("error rending %s stack %s template: %w", swarmStack.name, filepath, err)
 	}
 	return nil
 }
