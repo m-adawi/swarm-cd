@@ -3,7 +3,13 @@ import React from "react"
 import { FaGithub } from "react-icons/fa"
 import ColorToggleButton from "./ColorToggleButton"
 
-function HeaderBar({ onQueryChange }: { onQueryChange: (query: string) => void }): React.ReactElement {
+function HeaderBar({
+  onQueryChange,
+  error
+}: Readonly<{
+  onQueryChange: (query: string) => void
+  error: boolean
+}>): React.ReactElement {
   return (
     <Box
       as="header"
@@ -30,6 +36,7 @@ function HeaderBar({ onQueryChange }: { onQueryChange: (query: string) => void }
             size="lg"
             variant="filled"
             bg={useColorModeValue("gray.200", "gray.800")}
+            disabled={error}
           />
         </Box>
 

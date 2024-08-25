@@ -11,13 +11,13 @@ function App(): React.ReactElement {
   return (
     <>
       <Container maxW="container.lg" mt={4}>
-        <HeaderBar onQueryChange={query => setSearchQuery(query)} />
-        {error !== null ? (
-          <Text fontSize="xl" align="center">
+        <HeaderBar onQueryChange={query => setSearchQuery(query)} error={error !== null} />
+        {error === null ? (
+          <StatusCardList statuses={stacks} query={searchQuery} />
+        ) : (
+          <Text fontSize="xl" align="center" color="red.500">
             {error}
           </Text>
-        ) : (
-          <StatusCardList statuses={stacks} query={searchQuery} />
         )}
       </Container>
     </>

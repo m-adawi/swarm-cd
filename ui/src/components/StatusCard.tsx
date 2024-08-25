@@ -13,16 +13,14 @@ function StatusCard({
   repoURL: string
 }>): React.ReactElement {
   return (
-    <Box borderWidth="1px" borderRadius="sm" overflow="hidden" p={4} boxShadow="md">
+    <Box borderWidth="1px" borderRadius="sm" overflow="hidden" p={4} boxShadow="lg">
       <Grid templateColumns="auto 1fr" gap={2}>
         <Text fontWeight="bold">Name:</Text>
         <Text>{name}</Text>
 
         {error !== "" && (
           <>
-            <Text fontWeight="bold" color="red.500">
-              Error:
-            </Text>
+            <Text fontWeight="bold">Error:</Text>
             <Text color="red.500">{error}</Text>
           </>
         )}

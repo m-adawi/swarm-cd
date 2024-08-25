@@ -1,6 +1,6 @@
 # SwarmCD UI
 
-This repository contains the code for the Swarm-CD UI, a web-based user interface for checking the deployment status. The UI is built using React and bundled by Vite for fast and efficient development and build processes.
+This repository contains the code for the SwarmCD UI, a web-based user interface for checking the deployment status. The UI is built using React and bundled by Vite for fast and efficient development and build processes.
 
 ## Installation
 
@@ -12,7 +12,7 @@ This repository contains the code for the Swarm-CD UI, a web-based user interfac
 
 ## Directory structure
 
-```
+```text
 swarm-cd-ui/
 ├── public/                # Static assets
 ├── src/                   # Source files
@@ -23,4 +23,20 @@ swarm-cd-ui/
 │   ├── index.tsx          # Entry point
 ├── package.json           # Project metadata and scripts
 └── vite.config.ts         # Vite configuration
+```
+
+Recommended `.vscode/settings.json`:
+
+```json
+{
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "always",
+    "source.fixAll.eslint": "always"
+  },
+  "editor.tabSize": 2,
+  "editor.formatOnSave": true,
+  "eslint.format.enable": true,
+  "eslint.lintTask.enable": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
+}
 ```
