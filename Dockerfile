@@ -1,14 +1,11 @@
 FROM node:22-alpine3.19 AS ui
 WORKDIR /ui
-
 COPY ui/package.json ui/package-lock.json .
 RUN npm install
-
 COPY ui/ .
 RUN npm run build
 
 FROM golang:1.22.5 AS backend
-
 COPY go.mod go.sum ./
 RUN go mod download
 COPY cmd/ cmd/
