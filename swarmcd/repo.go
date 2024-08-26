@@ -12,12 +12,12 @@ import (
 )
 
 type stackRepo struct {
-	name string
+	name          string
 	lock          *sync.Mutex
-	url string
+	url           string
 	gitRepoObject *git.Repository
 	auth          *http.BasicAuth
-	path string
+	path          string
 }
 
 func newStackRepo(name string, path string, url string, auth *http.BasicAuth) (*stackRepo, error) {
@@ -25,7 +25,7 @@ func newStackRepo(name string, path string, url string, auth *http.BasicAuth) (*
 	cloneOptions := &git.CloneOptions{
 		URL:   url,
 		Depth: 1,
-		Auth: auth,
+		Auth:  auth,
 	}
 	repo, err := git.PlainClone(path, false, cloneOptions)
 
@@ -46,11 +46,11 @@ func newStackRepo(name string, path string, url string, auth *http.BasicAuth) (*
 		}
 	}
 	return &stackRepo{
-		name: name,
-		path: path,
-		url: url,
-		auth: auth,
-		lock: &sync.Mutex{},
+		name:          name,
+		path:          path,
+		url:           url,
+		auth:          auth,
+		lock:          &sync.Mutex{},
 		gitRepoObject: repo,
 	}, nil
 }
@@ -67,7 +67,7 @@ func (repo *stackRepo) pullChanges(branch string) (revision string, err error) {
 	log.Debug("checking out branch...")
 	err = workTree.Checkout(&git.CheckoutOptions{
 		Branch: plumbing.ReferenceName("refs/remotes/origin/" + branch),
-		Force: true,
+		Force:  true,
 	})
 	if err != nil {
 		return "", fmt.Errorf("could not checkout branch %s in %s: %w", branch, repo.name, err)
@@ -75,8 +75,8 @@ func (repo *stackRepo) pullChanges(branch string) (revision string, err error) {
 
 	pullOptions := &git.PullOptions{
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
-		RemoteName: "origin",
-		Auth: repo.auth,
+		RemoteName:    "origin",
+		Auth:          repo.auth,
 	}
 
 	log.Debug("pulling changes...")
