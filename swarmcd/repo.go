@@ -3,6 +3,7 @@ package swarmcd
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
 
 	"github.com/go-git/go-git/v5"
@@ -54,13 +55,16 @@ func newStackRepo(name string, path string, url string, auth *http.BasicAuth) (*
 	}, nil
 }
 
-
 func (repo *stackRepo) pullChanges(branch string) (revision string, err error) {
+	log := logger.With(slog.String("repo", repo.name), slog.String("branch", branch))
+
+	log.Debug("getting repo worktree...")
 	workTree, err := repo.gitRepoObject.Worktree()
 	if err != nil {
 		return "", fmt.Errorf("could not get %s repo worktree: %w", repo.name, err)
 	}
-	
+
+	log.Debug("checking out branch...")
 	err = workTree.Checkout(&git.CheckoutOptions{
 		Branch: plumbing.ReferenceName("refs/remotes/origin/" + branch),
 		Force: true,
@@ -68,24 +72,26 @@ func (repo *stackRepo) pullChanges(branch string) (revision string, err error) {
 	if err != nil {
 		return "", fmt.Errorf("could not checkout branch %s in %s: %w", branch, repo.name, err)
 	}
-	
+
 	pullOptions := &git.PullOptions{
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		RemoteName: "origin",
 		Auth: repo.auth,
 	}
 
+	log.Debug("pulling changes...")
 	err = workTree.Pull(pullOptions)
 	if err != nil {
 		// we get this error when provided creds are invalid
-		// which can mislead users into thinking they 
+		// which can mislead users into thinking they
 		// haven't provided creds correctly
 		if err.Error() == "authentication required" {
 			err = fmt.Errorf("authentication failed")
 		}
-		return "", fmt.Errorf("could not pull %s branch in %s repo: %w", branch, repo.name,  err)
+		return "", fmt.Errorf("could not pull %s branch in %s repo: %w", branch, repo.name, err)
 	}
-	
+
+	log.Debug("getting revision...")
 	ref, err := repo.gitRepoObject.Head()
 	if err != nil {
 		return "", fmt.Errorf("could not get HEAD commit hash of %s branch in %s repo: %w", branch, repo.name, err)

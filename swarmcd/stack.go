@@ -3,6 +3,7 @@ package swarmcd
 import (
 	"crypto/md5"
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"text/template"
@@ -33,35 +34,45 @@ func newSwarmStack(name string, repo *stackRepo, branch string, composePath stri
 	}
 }
 
-
 func (swarmStack *swarmStack) updateStack() (revision string, err error) {
+	log := logger.With(
+		slog.String("stack", swarmStack.name),
+		slog.String("branch", swarmStack.branch),
+	)
+
+	log.Debug("pulling changes...")
 	revision, err = swarmStack.repo.pullChanges(swarmStack.branch)
 	if err != nil && err != git.NoErrAlreadyUpToDate {
 		return
 	}
+	log.Debug("changes pulled", "revision", revision)
 
+	log.Debug("decrypting sops files...")
 	err = swarmStack.decryptSopsFiles()
 	if err != nil {
 		return "", fmt.Errorf("failed to decrypt one or more sops files for %s stack: %w", swarmStack.name, err)
 	}
 
 	if swarmStack.valuesFile != "" {
-		err = swarmStack.renderComposeTemplate() 
+		log.Debug("rendering template...")
+		err = swarmStack.renderComposeTemplate()
 		if err != nil {
 			return
 		}
 	}
 
-	err = swarmStack.rotateConfigsAndSecrets() 
+	log.Debug("rotating configs and secrets...")
+	err = swarmStack.rotateConfigsAndSecrets()
 	if err != nil {
 		return
 	}
 
-	err = swarmStack.deployStack() 
+	log.Debug("deploying stack...")
+	err = swarmStack.deployStack()
 	if err != nil {
 		return
 	}
-	return 
+	return
 }
 
 func (swarmStack *swarmStack) decryptSopsFiles() (err error) {
