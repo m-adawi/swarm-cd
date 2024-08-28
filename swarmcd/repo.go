@@ -22,8 +22,7 @@ type stackRepo struct {
 func newStackRepo(name string, path string, url string, auth *http.BasicAuth) (*stackRepo, error) {
 	var repo *git.Repository
 	cloneOptions := &git.CloneOptions{
-		URL:   url,
-		Depth: 1,
+		URL:  url,
 		Auth: auth,
 	}
 	repo, err := git.PlainClone(path, false, cloneOptions)
@@ -76,7 +75,7 @@ func (repo *stackRepo) pullChanges(branch string) (revision string, err error) {
 	}
 
 	err = workTree.Pull(pullOptions)
-	if err != nil {
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		// we get this error when provided creds are invalid
 		// which can mislead users into thinking they 
 		// haven't provided creds correctly

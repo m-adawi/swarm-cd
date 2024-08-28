@@ -8,7 +8,6 @@ import (
 	"text/template"
 
 	"github.com/docker/cli/cli/command/stack"
-	"github.com/go-git/go-git/v5"
 	"github.com/goccy/go-yaml"
 	"github.com/m-adawi/swarm-cd/util"
 )
@@ -36,7 +35,7 @@ func newSwarmStack(name string, repo *stackRepo, branch string, composePath stri
 
 func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	revision, err = swarmStack.repo.pullChanges(swarmStack.branch)
-	if err != nil && err != git.NoErrAlreadyUpToDate {
+	if err != nil {
 		return
 	}
 
