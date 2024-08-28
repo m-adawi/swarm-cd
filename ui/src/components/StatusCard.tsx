@@ -1,4 +1,4 @@
-import { Box, Grid, Link, Text } from "@chakra-ui/react"
+import { Box, Grid, Link, Text, TextProps } from "@chakra-ui/react"
 import React from "react"
 
 function StatusCard({
@@ -15,25 +15,33 @@ function StatusCard({
   return (
     <Box borderWidth="1px" borderRadius="sm" overflow="hidden" p={4} boxShadow="lg">
       <Grid templateColumns="auto 1fr" gap={2}>
-        <Text fontWeight="bold">Name:</Text>
+        <KeyText>Name:</KeyText>
         <Text>{name}</Text>
 
         {error !== "" && (
           <>
-            <Text fontWeight="bold">Error:</Text>
+            <KeyText>Error:</KeyText>
             <Text color="red.500">{error}</Text>
           </>
         )}
 
-        <Text fontWeight="bold">Revision:</Text>
+        <KeyText>Revision:</KeyText>
         <Text>{revision}</Text>
 
-        <Text fontWeight="bold">Repo URL:</Text>
+        <KeyText>Repo URL:</KeyText>
         <Link color="teal.500" href={repoURL} isExternal>
           {repoURL}
         </Link>
       </Grid>
     </Box>
+  )
+}
+
+function KeyText({ children, ...props }: TextProps): React.ReactElement {
+  return (
+    <Text fontWeight="bold" {...props}>
+      {children}
+    </Text>
   )
 }
 

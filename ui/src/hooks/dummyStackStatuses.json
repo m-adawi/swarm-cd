@@ -1,0 +1,20 @@
+[
+  {
+    "Name": "Project Alpha",
+    "Error": "",
+    "Revision": "v1.0.1",
+    "RepoURL": "https://github.com/user/project-alpha"
+  },
+  {
+    "Name": "Project Beta",
+    "Error": "Failed to build",
+    "Revision": "v2.3.4",
+    "RepoURL": "https://github.com/user/project-beta"
+  },
+  {
+    "Name": "Project Gamma",
+    "Error": "",
+    "Revision": "v0.9.8",
+    "RepoURL": "https://github.com/user/project-gamma"
+  }
+]
