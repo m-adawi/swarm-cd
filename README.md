@@ -4,6 +4,8 @@ A declarative GitOps and Continuous Deployment tool for Docker Swarm.
 
 Inspired by [ArgoCD](https://argo-cd.readthedocs.io/en/stable/).
 
+![SwarmCD UI](assets/ui.png)
+
 ## Usage
 
 In this example, we use SwarmCD to deploy the stack in the repo
