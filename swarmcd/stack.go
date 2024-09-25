@@ -94,7 +94,6 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 }
 
 func (swarmStack *swarmStack) readStack() ([]byte, error) {
-	// composeFile := path.Join(config.ReposPath, swarmStack.repo.path, swarmStack.composePath)
 	composeFile := path.Join(swarmStack.repo.path, swarmStack.composePath)
 	composeFileBytes, err := os.ReadFile(composeFile)
 	if err != nil {
@@ -137,7 +136,7 @@ func (swarmStack *swarmStack) decryptSopsFiles(composeMap map[string]any) (err e
 	if !swarmStack.discoverSecrets {
 		sopsFiles = swarmStack.sopsFiles
 	} else {
-		sopsFiles, err = discoverSecrets(composeMap)
+		sopsFiles, err = discoverSecrets(composeMap, swarmStack.composePath)
 		if err != nil {
 			return
 		}
@@ -151,7 +150,7 @@ func (swarmStack *swarmStack) decryptSopsFiles(composeMap map[string]any) (err e
 	return
 }
 
-func discoverSecrets(composeMap map[string]any) ([]string, error) {
+func discoverSecrets(composeMap map[string]any, composePath string) ([]string, error) {
 	var sopsFiles []string
 	if secrets, ok := composeMap["secrets"].(map[string]any); ok {
 		for secretName, secret := range secrets {
@@ -159,11 +158,12 @@ func discoverSecrets(composeMap map[string]any) ([]string, error) {
 			if !ok {
 				return nil, fmt.Errorf("invalid compose file: %s secret must be a map", secretName)
 			}
-			objectFile, ok := secretMap["file"].(string)
+			secretFile, ok := secretMap["file"].(string)
 			if !ok {
 				return nil, fmt.Errorf("invalid compose file: %s file field must be a string", secretName)
 			}
-			sopsFiles = append(sopsFiles, objectFile)
+			objectDir := path.Join(path.Dir(composePath), secretFile)
+			sopsFiles = append(sopsFiles, objectDir)
 		}
 	}
 	return sopsFiles, nil
