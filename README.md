@@ -4,6 +4,8 @@ A declarative GitOps and Continuous Deployment tool for Docker Swarm.
 
 Inspired by [ArgoCD](https://argo-cd.readthedocs.io/en/stable/).
 
+![SwarmCD UI](assets/ui.png)
+
 ## Usage
 
 In this example, we use SwarmCD to deploy the stack in the repo
@@ -159,6 +161,53 @@ configs:
     file: ./stacks.yaml
   repos:
     file: ./repos.yaml
+```
+
+## Give SwarmCD access to private registries
+
+You can pass the authentication to private container registries via the `~/.docker/config.json` file.
+
+First, encode your credentials with base64 (here we use `printf` to avoid the trailing newline):
+
+```shell
+printf 'username:password' | base64
+```
+
+Then create the docker config file like this:
+
+```json
+// docker-config.json
+{
+    "auths": {
+        "my.registry.example": {
+            "auth": "(base64 output here)"
+        }
+    }
+}
+```
+
+Lastly, add the config file as secret and mount it to `/root/.docker/config.json`:
+
+```yaml
+# docker-compose.yaml
+version: '3.7'
+services:
+  swarm-cd:
+    image: ghcr.io/m-adawi/swarm-cd:latest
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./repos.yaml:/app/repos.yaml:ro
+      - ./stacks.yaml:/app/stacks.yaml:ro
+    secrets:
+      - source: docker-config
+        target: /root/.docker/config.json
+secrets:
+  docker-config:
+    file: docker-config.json
 ```
 
 ## Documentation
