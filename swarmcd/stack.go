@@ -162,6 +162,10 @@ func discoverSecrets(composeMap map[string]any, composePath string) ([]string, e
 			if !ok {
 				return nil, fmt.Errorf("invalid compose file: %s secret must be a map", secretName)
 			}
+			isExternal, ok := secretMap["external"].(bool)
+			if ok && isExternal {
+				continue
+			}
 			secretFile, ok := secretMap["file"].(string)
 			if !ok {
 				return nil, fmt.Errorf("invalid compose file: %s file field must be a string", secretName)
@@ -200,6 +204,10 @@ func (swarmStack *swarmStack) rotateObjects(objects map[string]any, objectType s
 		objectMap, ok := object.(map[string]any)
 		if !ok {
 			return fmt.Errorf("invalid compose file: %s object must be a map", objectName)
+		}
+		isExternal, ok := objectMap["external"].(bool)
+		if ok && isExternal {
+			continue
 		}
 		objectFile, ok := objectMap["file"].(string)
 		if !ok {

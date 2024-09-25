@@ -18,6 +18,7 @@ COPY util/ util/
 COPY web/ web/
 COPY swarmcd/ swarmcd/
 RUN CGO_ENABLED=0 GOOS=linux go build -o /swarm-cd ./cmd/
+RUN go test ./swarmcd/
 
 # Stage 3: Final production image (depends on previous stages)
 FROM alpine:3.2
