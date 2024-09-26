@@ -34,6 +34,8 @@ func getFileFormat(filename string) string {
 		return "json"
 	} else if extension == ".ini" {
 		return "ini"
+	} else if extension == ".env" {
+		return "dotenv"
 	} else {
 		return "binary"
 	}
