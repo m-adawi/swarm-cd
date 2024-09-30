@@ -7,6 +7,9 @@ update_interval: 120
 # The path where SwarmCD will checkout repos
 repos_path: repos/
 
+# Automatically detect secrets to decrypt with SOPS
+sops_secrets_discovery: true
+
 # Automatically rotate configs and secrets
 # when the change. Adds a hash to config
 # and secret names
@@ -19,4 +22,3 @@ repos:
 # You can define stacks here instead of 
 # defining a separate stacks.yaml file
 stacks:
-
