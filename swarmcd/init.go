@@ -19,7 +19,6 @@ type StackStatus struct {
 	RepoURL  string
 }
 
-
 var config *util.Config = &util.Configs
 
 var logger *slog.Logger = util.Logger
@@ -44,7 +43,7 @@ func Init() (err error) {
 	return
 }
 
-func initRepos() (error) {
+func initRepos() error {
 	for repoName, repoConfig := range config.RepoConfigs {
 		repoPath := path.Join(config.ReposPath, repoName)
 		auth, err := createHTTPBasicAuth(repoName)
@@ -98,7 +97,8 @@ func initStacks() error {
 		if !ok {
 			return fmt.Errorf("error initializing %s stack, no such repo: %s", stack, stackConfig.Repo)
 		}
-		swarmStack := newSwarmStack(stack, stackRepo, stackConfig.Branch, stackConfig.ComposeFile, stackConfig.SopsFiles, stackConfig.ValuesFile)
+		discoverSecrets := config.SopsSecretsDiscovery || stackConfig.SopsSecretsDiscovery
+		swarmStack := newSwarmStack(stack, stackRepo, stackConfig.Branch, stackConfig.ComposeFile, stackConfig.SopsFiles, stackConfig.ValuesFile, discoverSecrets)
 		stacks = append(stacks, swarmStack)
 		stackStatus[stack] = &StackStatus{}
 		stackStatus[stack].RepoURL = stackRepo.url
