@@ -57,7 +57,6 @@ docker stack deploy --compose-file docker-compose.yaml swarm-cd
 This will start SwarmCD, it will periodically check the stack repo
 for new changes, pulling them and updating the stack.
 
-
 ## Manage Encrypted Secrets Using SOPS
 
 You can use [sops](https://github.com/getsops/sops) to encrypt secrets in git repos and
@@ -112,6 +111,19 @@ secrets:
 
 This way, SwarmCD will decrypt the files each time before it updates
 the stack.
+
+### Automatic SOPS secrets detection
+
+Instead of specifying the paths of every single secrets you need to decrypt,
+you can use the `sops_secrets_discovery: true` option:
+
+- in the `config.yaml` file to enable it globally
+- in the `stacks.yaml` file for the individual stacks.
+
+Please note that:
+
+- if the global setting is set to `true`, it ignores individual stacks overrides.
+- if the stack-level setting is set to `true`, it ignores the `sops_files` setting altogether.
 
 ## Connect SwarmCD to a remote docker socket
 

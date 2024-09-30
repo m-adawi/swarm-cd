@@ -22,4 +22,6 @@ stack-name:
   # before updating stack
   sops_files:
     - path/to/sops/encrypted/file
-
+  # Enable the automatic secret discovery
+  # alternative to sops_files
+  sops_secrets_discovery: false
