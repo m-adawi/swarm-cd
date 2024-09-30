@@ -8,11 +8,12 @@ import (
 )
 
 type StackConfig struct {
-	Repo        string
-	Branch      string
-	ComposeFile string   `mapstructure:"compose_file"`
-	ValuesFile  string   `mapstructure:"values_file"`
-	SopsFiles   []string `mapstructure:"sops_files"`
+	Repo                 string
+	Branch               string
+	ComposeFile          string   `mapstructure:"compose_file"`
+	ValuesFile           string   `mapstructure:"values_file"`
+	SopsFiles            []string `mapstructure:"sops_files"`
+	SopsSecretsDiscovery bool     `mapstructure:"sops_secrets_discovery"`
 }
 
 type RepoConfig struct {
@@ -23,11 +24,12 @@ type RepoConfig struct {
 }
 
 type Config struct {
-	ReposPath      string                  `mapstructure:"repos_path"`
-	UpdateInterval int                     `mapstructure:"update_interval"`
-	AutoRotate     bool                    `mapstructure:"auto_rotate"`
-	StackConfigs   map[string]*StackConfig `mapstructure:"stacks"`
-	RepoConfigs    map[string]*RepoConfig  `mapstructure:"repos"`
+	ReposPath            string                  `mapstructure:"repos_path"`
+	UpdateInterval       int                     `mapstructure:"update_interval"`
+	AutoRotate           bool                    `mapstructure:"auto_rotate"`
+	StackConfigs         map[string]*StackConfig `mapstructure:"stacks"`
+	RepoConfigs          map[string]*RepoConfig  `mapstructure:"repos"`
+	SopsSecretsDiscovery bool                    `mapstructure:"sops_secrets_discovery"`
 }
 
 var Configs Config
@@ -59,6 +61,7 @@ func readConfig() (err error) {
 	configViper.SetDefault("update_interval", 120)
 	configViper.SetDefault("repos_path", "repos")
 	configViper.SetDefault("auto_rotate", true)
+	configViper.SetDefault("sops_secrets_discovery", false)
 	err = configViper.ReadInConfig()
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
 		return
