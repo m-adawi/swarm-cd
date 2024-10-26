@@ -21,8 +21,10 @@ swarm-cd-ui/
 │   ├── hooks/             # React hooks
 │   ├── App.tsx            # Main App component
 │   ├── index.tsx          # Entry point
+├── tests/                 # Test files
 ├── package.json           # Project metadata and scripts
 └── vite.config.ts         # Vite configuration
+└── vitest.config.ts       # Vitest configuration
 ```
 
 Recommended `.vscode/settings.json`:
