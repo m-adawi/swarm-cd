@@ -3,7 +3,7 @@ WORKDIR /ui
 COPY ui/package.json ui/package-lock.json .
 RUN npm install
 COPY ui/ .
-RUN npm run build
+RUN npm run build && npm test run
 
 FROM golang:1.22.5 AS backend
 COPY go.mod go.sum ./
