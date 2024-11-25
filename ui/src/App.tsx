@@ -9,18 +9,16 @@ function App(): React.ReactElement {
   const [searchQuery, setSearchQuery] = useState("")
 
   return (
-    <>
-      <Container maxW="container.lg" mt={4}>
-        <HeaderBar onQueryChange={query => setSearchQuery(query)} error={error !== null} />
-        {error === null ? (
-          <StatusCardList statuses={statuses} query={searchQuery} />
-        ) : (
-          <Text fontSize="xl" align="center" color="red.500">
-            {error}
-          </Text>
-        )}
-      </Container>
-    </>
+    <Container maxW="container.lg" mt={4}>
+      <HeaderBar onQueryChange={query => setSearchQuery(query)} error={error !== null} />
+      {error === null ? (
+        <StatusCardList statuses={statuses} query={searchQuery} />
+      ) : (
+        <Text fontSize="xl" align="center" color="red.500">
+          {error}
+        </Text>
+      )}
+    </Container>
   )
 }
 

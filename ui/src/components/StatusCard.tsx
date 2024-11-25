@@ -37,7 +37,7 @@ function StatusCard({
   )
 }
 
-function KeyText({ children, ...props }: TextProps): React.ReactElement {
+function KeyText({ children, ...props }: Readonly<TextProps>): React.ReactElement {
   return (
     <Text fontWeight="bold" {...props}>
       {children}
