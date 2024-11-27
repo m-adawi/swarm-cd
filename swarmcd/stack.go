@@ -55,6 +55,20 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		return
 	}
 
+	log.Debug("checking if stack file is SOPS encrypted...")
+    isEncrypted, err := swarmStack.isSOPSEncrypted(stackBytes)
+    if err != nil {
+        return "", fmt.Errorf("failed to check if stack file is SOPS encrypted: %w", err)
+    }
+
+    if isEncrypted {
+        log.Debug("decrypting SOPS-encrypted stack file...")
+        stackBytes, err = swarmStack.decryptComposeFile()
+        if err != nil {
+            return "", fmt.Errorf("failed to decrypt SOPS-encrypted stack file: %w", err)
+        }
+    }
+
 	if swarmStack.valuesFile != "" {
 		log.Debug("rendering template...")
 		stackBytes, err = swarmStack.renderComposeTemplate(stackBytes)
@@ -233,4 +247,34 @@ func (swarmStack *swarmStack) deployStack() error {
 		return fmt.Errorf("could not deploy stack %s: %s", swarmStack.name, err)
 	}
 	return nil
+}
+
+func (swarmStack *swarmStack) isSOPSEncrypted(content []byte) (bool, error) {
+    if bytes.Contains(content, []byte("ENC[AES256_GCM,data:")) {
+        return true, nil
+    }
+
+    var yamlData map[string]interface{}
+    if err := yaml.Unmarshal(content, &yamlData); err == nil {
+        if _, ok := yamlData["sops"]; ok {
+            return true, nil
+        }
+    }
+
+    return false, nil
+}
+
+func (swarmStack *swarmStack) decryptComposeFile() ([]byte, error) {
+    composeFile := path.Join(swarmStack.repo.path, swarmStack.composePath)
+    
+    if err := util.DecryptFile(composeFile); err != nil {
+        return nil, fmt.Errorf("failed to decrypt compose file: %w", err)
+    }
+
+    decryptedContent, err := os.ReadFile(composeFile)
+    if err != nil {
+        return nil, fmt.Errorf("failed to read decrypted compose file: %w", err)
+    }
+
+    return decryptedContent, nil
 }
