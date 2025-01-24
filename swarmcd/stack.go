@@ -161,8 +161,8 @@ func discoverSecrets(composeMap map[string]any, composePath string) ([]string, e
 			if !ok {
 				return nil, fmt.Errorf("invalid compose file: %s file field must be a string", secretName)
 			}
-			objectDir := path.Join(path.Dir(composePath), secretFile)
-			sopsFiles = append(sopsFiles, objectDir)
+			secretPath := path.Join(path.Dir(composePath), secretFile)
+			sopsFiles = append(sopsFiles, secretPath)
 		}
 	}
 	return sopsFiles, nil
