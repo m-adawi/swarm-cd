@@ -102,7 +102,7 @@ func (swarmStack *swarmStack) readStack() ([]byte, error) {
 }
 
 func (swarmStack *swarmStack) renderComposeTemplate(templateContents []byte) ([]byte, error) {
-	valuesFile := path.Join(config.ReposPath, swarmStack.repo.path, swarmStack.valuesFile)
+	valuesFile := path.Join(swarmStack.repo.path, swarmStack.valuesFile)
 	valuesBytes, err := os.ReadFile(valuesFile)
 	if err != nil {
 		return nil, fmt.Errorf("could not read %s stack values file: %w", swarmStack.name, err)
