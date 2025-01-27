@@ -66,11 +66,7 @@ func readConfig() (err error) {
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
 		return
 	}
-	err = configViper.Unmarshal(&Configs)
-	if err != nil {
-		return
-	}
-	return
+	return configViper.Unmarshal(&Configs)
 }
 
 func readRepoConfigs() (err error) {
@@ -81,11 +77,7 @@ func readRepoConfigs() (err error) {
 	if err != nil {
 		return
 	}
-	err = reposViper.Unmarshal(&Configs.RepoConfigs)
-	if err != nil {
-		return
-	}
-	return
+	return reposViper.Unmarshal(&Configs.RepoConfigs)
 }
 
 func readStackConfigs() (err error) {
@@ -96,9 +88,5 @@ func readStackConfigs() (err error) {
 	if err != nil {
 		return
 	}
-	err = stacksViper.Unmarshal(&Configs.StackConfigs)
-	if err != nil {
-		return
-	}
-	return
+	return stacksViper.Unmarshal(&Configs.StackConfigs)
 }
