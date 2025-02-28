@@ -46,11 +46,17 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./repos.yaml:/app/repos.yaml:ro
       - ./stacks.yaml:/app/stacks.yaml:ro
+      - swarmcd_data:/data  # Mount the volume for SQLite
+
+# Ensure that swarmdc_data persists across container restarts.
+volumes:
+  swarmcd_data:
 ```
 
 Run this on a swarm manager node:
 
 ```bash
+docker volume create swarmcd_data
 docker stack deploy --compose-file docker-compose.yaml swarm-cd
 ```
 
@@ -87,6 +93,7 @@ and set the environment variable SOPS `SOPS_AGE_KEY_FILE`
 to the path of the key file. See the following docker-compose example
 
 ```yaml
+# docker-compose.yaml
 version: '3.7'
 services:
   swarm-cd:
@@ -104,6 +111,12 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./repos.yaml:/app/repos.yaml:ro
       - ./stacks.yaml:/app/stacks.yaml:ro
+      - swarmcd_data:/data  # Mount the volume for SQLite
+        
+# Ensure that swarmdc_data persists across container restarts.
+volumes:
+  swarmcd_data:
+
 secrets:
   age:
     file: age.key
@@ -214,9 +227,15 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./repos.yaml:/app/repos.yaml:ro
       - ./stacks.yaml:/app/stacks.yaml:ro
+      - swarmcd_data:/data  # Mount the volume for SQLite
     secrets:
       - source: docker-config
         target: /root/.docker/config.json
+        
+# Ensure that swarmdc_data persists across container restarts.
+volumes:
+  swarmcd_data:
+
 secrets:
   docker-config:
     file: docker-config.json
