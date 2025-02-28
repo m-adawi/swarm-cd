@@ -1,0 +1,19 @@
+# docker-compose.yaml
+version: '3.7'
+services:
+  swarm-cd:
+    image: chris/swarmcd:dev
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./repos.yaml:/app/repos.yaml:ro
+      - ./stacks.yaml:/app/stacks.yaml:ro
+      - swarmcd_data:/data  # Mount the volume for SQLite
+
+# Ensure that swarmdc_data persists across container restarts.
+volumes:
+  swarmcd_data:
+    driver: local
