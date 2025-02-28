@@ -33,11 +33,6 @@ func updateStackThread(swarmStack *swarmStack, waitGroup *sync.WaitGroup) {
 	logger.Info(fmt.Sprintf("updating %s stack", swarmStack.name))
 	revision, err := swarmStack.updateStack()
 
-	if stackStatus[swarmStack.name].Revision == revision {
-		logger.Info(fmt.Sprintf("%s stack is already up-to-date", swarmStack.name))
-		return
-	}
-
 	if err != nil {
 		stackStatus[swarmStack.name].Error = err.Error()
 		logger.Error(err.Error())

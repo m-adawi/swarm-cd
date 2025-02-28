@@ -51,7 +51,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 
 	lastRevision, err := loadRevisionDB(swarmStack.name)
 	if err != nil {
-		return "", fmt.Errorf("failed to read stack for %s stack: %w", swarmStack.name, err)
+		return "", fmt.Errorf("failed to read revision from db for %s stack: %w", swarmStack.name, err)
 	}
 
 	if lastRevision == "" {
