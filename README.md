@@ -51,12 +51,12 @@ services:
 # Ensure that swarmdc_data persists across container restarts.
 volumes:
   swarmcd_data:
+    driver: local
 ```
 
 Run this on a swarm manager node:
 
 ```bash
-docker volume create swarmcd_data
 docker stack deploy --compose-file docker-compose.yaml swarm-cd
 ```
 
@@ -116,6 +116,7 @@ services:
 # Ensure that swarmdc_data persists across container restarts.
 volumes:
   swarmcd_data:
+    driver: local
 
 secrets:
   age:
@@ -235,6 +236,7 @@ services:
 # Ensure that swarmdc_data persists across container restarts.
 volumes:
   swarmcd_data:
+    driver: local
 
 secrets:
   docker-config:
