@@ -49,15 +49,16 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 	log.Debug("changes pulled", "revision", revision)
 
-	if stackStatus[swarmStack.name].Revision == revision {
+	lastRevision := loadRevisionDB(swarmStack.name)
+	if lastRevision == revision {
 		logger.Info(fmt.Sprintf("%s revision unchanged: stack up-to-date", swarmStack.name))
-		return revision, err
+		return revision, nil
 	}
 
 	log.Debug("reading stack file...")
 	stackBytes, err := swarmStack.readStack()
 	if err != nil {
-		return
+		return "nil", fmt.Errorf("failed to read stack for %s stack: %w", swarmStack.name, err)
 	}
 
 	if swarmStack.valuesFile != "" {
@@ -65,13 +66,13 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		stackBytes, err = swarmStack.renderComposeTemplate(stackBytes)
 	}
 	if err != nil {
-		return
+		return "", fmt.Errorf("failed to render compose template for %s stack: %w", swarmStack.name, err)
 	}
 
 	log.Debug("parsing stack content...")
 	stackContents, err := swarmStack.parseStackString([]byte(stackBytes))
 	if err != nil {
-		return
+		return "", fmt.Errorf("failed to parse stack content for %s stack: %w", swarmStack.name, err)
 	}
 
 	log.Debug("decrypting secrets...")
@@ -83,17 +84,27 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	log.Debug("rotating configs and secrets...")
 	err = swarmStack.rotateConfigsAndSecrets(stackContents)
 	if err != nil {
-		return
+		return "", fmt.Errorf("failed to rotate configs and secrets for %s stack: %w", swarmStack.name, err)
 	}
 
 	log.Debug("writing stack to file...")
 	err = swarmStack.writeStack(stackContents)
 	if err != nil {
-		return
+		return "", fmt.Errorf("failed to write stack to file for %s stack: %w", swarmStack.name, err)
 	}
 
 	log.Debug("deploying stack...")
 	err = swarmStack.deployStack()
+	if err != nil {
+		return revision, fmt.Errorf("failed to deploy stack for  %s stack: %w", swarmStack.name, err)
+	}
+
+	log.Debug("saving current revision to db...")
+	err = saveRevisionDB(swarmStack.name, revision)
+	if err != nil {
+		return revision, fmt.Errorf("failed to save revision to db for  %s stack: %w", swarmStack.name, err)
+	}
+
 	return
 }
 
