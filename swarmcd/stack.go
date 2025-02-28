@@ -49,16 +49,26 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 	log.Debug("changes pulled", "revision", revision)
 
-	lastRevision := loadRevisionDB(swarmStack.name)
+	lastRevision, err := loadRevisionDB(swarmStack.name)
+	if err != nil {
+		return "", fmt.Errorf("failed to read stack for %s stack: %w", swarmStack.name, err)
+	}
+
+	if lastRevision == "" {
+		logger.Info(fmt.Sprintf("%s no last revision revision found", swarmStack.name))
+	}
+
 	if lastRevision == revision {
 		logger.Info(fmt.Sprintf("%s revision unchanged: stack up-to-date", swarmStack.name))
 		return revision, nil
 	}
 
+	logger.Info(fmt.Sprintf("%s new revision revision found %s! will update the stack", swarmStack.name, revision))
+
 	log.Debug("reading stack file...")
 	stackBytes, err := swarmStack.readStack()
 	if err != nil {
-		return "nil", fmt.Errorf("failed to read stack for %s stack: %w", swarmStack.name, err)
+		return "", fmt.Errorf("failed to read stack for %s stack: %w", swarmStack.name, err)
 	}
 
 	if swarmStack.valuesFile != "" {
