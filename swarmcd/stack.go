@@ -49,6 +49,11 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 	log.Debug("changes pulled", "revision", revision)
 
+	if stackStatus[swarmStack.name].Revision == revision {
+		logger.Info(fmt.Sprintf("%s revision unchanged: stack up-to-date", swarmStack.name))
+		return revision, err
+	}
+
 	log.Debug("reading stack file...")
 	stackBytes, err := swarmStack.readStack()
 	if err != nil {
