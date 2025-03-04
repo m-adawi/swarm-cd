@@ -24,7 +24,7 @@ func initDB() error {
 	return nil
 }
 
-func saveRevisionDB(stackName, revision string) error {
+func saveLastDeployedRevision(stackName, revision string) error {
 	err := initDB() // Ensure DB is initialized
 	if err != nil {
 		return err
