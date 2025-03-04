@@ -22,3 +22,6 @@ repos:
 # You can define stacks here instead of 
 # defining a separate stacks.yaml file
 stacks:
+
+# The WEB UI address
+address: 0.0.0.0:8080
