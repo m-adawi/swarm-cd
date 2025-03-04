@@ -5,9 +5,17 @@ import (
 	"errors"
 	"fmt"
 	_ "modernc.org/sqlite"
+	"os"
 )
 
-const dbFile = "/data/revisions.db"
+var dbFile = getDBFilePath()
+
+func getDBFilePath() string {
+	if path := os.Getenv("SWARMCD_DB"); path != "" {
+		return path
+	}
+	return "/data/revisions.db" // Default path
+}
 
 // Ensure database and table exist
 func initDB() error {
