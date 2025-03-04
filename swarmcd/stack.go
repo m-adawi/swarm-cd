@@ -110,7 +110,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 
 	log.Debug("saving current revision to db...")
-	err = saveRevisionDB(swarmStack.name, revision)
+	err = saveLastDeployedRevision(swarmStack.name, revision)
 	if err != nil {
 		return revision, fmt.Errorf("failed to save revision to db for  %s stack: %w", swarmStack.name, err)
 	}
