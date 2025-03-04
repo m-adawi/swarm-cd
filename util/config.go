@@ -30,6 +30,7 @@ type Config struct {
 	StackConfigs         map[string]*StackConfig `mapstructure:"stacks"`
 	RepoConfigs          map[string]*RepoConfig  `mapstructure:"repos"`
 	SopsSecretsDiscovery bool                    `mapstructure:"sops_secrets_discovery"`
+	Address              string                  `mapstructure:"address"`
 }
 
 var Configs Config
@@ -62,6 +63,7 @@ func readConfig() (err error) {
 	configViper.SetDefault("repos_path", "repos")
 	configViper.SetDefault("auto_rotate", true)
 	configViper.SetDefault("sops_secrets_discovery", false)
+	configViper.SetDefault("address", "0.0.0.0:8080")
 	err = configViper.ReadInConfig()
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
 		return
