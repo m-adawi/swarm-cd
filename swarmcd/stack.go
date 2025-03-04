@@ -49,7 +49,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 	log.Debug("changes pulled", "revision", revision)
 
-	lastRevision, err := loadRevisionDB(swarmStack.name)
+	lastRevision, err := loadLastDeployedRevision(swarmStack.name)
 	if err != nil {
 		return "", fmt.Errorf("failed to read revision from db for %s stack: %w", swarmStack.name, err)
 	}
