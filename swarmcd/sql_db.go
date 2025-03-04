@@ -46,7 +46,7 @@ func saveLastDeployedRevision(stackName, revision string) error {
 }
 
 // Load a stack's revision
-func loadRevisionDB(stackName string) (revision string, err error) {
+func loadLastDeployedRevision(stackName string) (revision string, err error) {
 	err = initDB() // Ensure DB is initialized
 	if err != nil {
 		return "", err
