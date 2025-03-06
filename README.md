@@ -51,7 +51,7 @@ services:
       - SWARMCD_DB=/data/revisions.db  # Pass DB file path as env variable
   
 
-# Ensure that swarmdc_data persists across container restarts.
+# Ensure that swarmcd_data persists across container restarts.
 volumes:
   swarmcd_data:
     driver: local
