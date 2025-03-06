@@ -46,9 +46,9 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./repos.yaml:/app/repos.yaml:ro
       - ./stacks.yaml:/app/stacks.yaml:ro
-      - swarmcd_data:/data  # Mount the volume for SQLite
+      - swarmcd_data:/data
     environment:
-      - SWARMCD_DB=/data/revisions.db  # Pass DB file path as env variable
+      - SWARMCD_DB=/data/revisions.db
   
 
 # Ensure that swarmcd_data persists across container restarts.
@@ -110,12 +110,12 @@ services:
         target: /secrets/age.key
     environment:
       - SOPS_AGE_KEY_FILE=/secrets/age.key
-      - SWARMCD_DB=/data/revisions.db  # Pass DB file path as env variable
+      - SWARMCD_DB=/data/revisions.db
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./repos.yaml:/app/repos.yaml:ro
       - ./stacks.yaml:/app/stacks.yaml:ro
-      - swarmcd_data:/data  # Mount the volume for SQLite
+      - swarmcd_data:/data
 
 
 # Ensure that swarmdc_data persists across container restarts.
@@ -233,10 +233,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./repos.yaml:/app/repos.yaml:ro
       - ./stacks.yaml:/app/stacks.yaml:ro
-      - swarmcd_data:/data  # Mount the volume for SQLite
+      - swarmcd_data:/data
     environment:
       - SOPS_AGE_KEY_FILE=/secrets/age.key
-      - SWARMCD_DB=/data/revisions.db  # Pass DB file path as env variable
+      - SWARMCD_DB=/data/revisions.db
     secrets:
       - source: docker-config
         target: /root/.docker/config.json
