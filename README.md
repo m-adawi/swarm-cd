@@ -50,8 +50,6 @@ services:
     environment:
       - SWARMCD_DB=/data/revisions.db
   
-
-# Ensure that swarmcd_data persists across container restarts.
 volumes:
   swarmcd_data:
     driver: local
@@ -65,6 +63,12 @@ docker stack deploy --compose-file docker-compose.yaml swarm-cd
 
 This will start SwarmCD, it will periodically check the stack repo
 for new changes, pulling them and updating the stack.
+
+### Configure the database
+SwarmCD uses a minimal DB to track the last deployed revision across 
+container restarts. By default, it stores data in data/revisions.db,
+but this can be changed via the `SWARMCD_DB` environment variable as 
+shown in the above docker-compose file.
 
 ## Manage Encrypted Secrets Using SOPS
 
@@ -117,8 +121,6 @@ services:
       - ./stacks.yaml:/app/stacks.yaml:ro
       - swarmcd_data:/data
 
-
-# Ensure that swarmdc_data persists across container restarts.
 volumes:
   swarmcd_data:
     driver: local
@@ -241,7 +243,6 @@ services:
       - source: docker-config
         target: /root/.docker/config.json
         
-# Ensure that swarmdc_data persists across container restarts.
 volumes:
   swarmcd_data:
     driver: local
