@@ -49,7 +49,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 	log.Debug("changes pulled", "revision", revision)
 
-	lastRevision, _, err := loadLastDeployedRevision(swarmStack.name)
+	lastRevision, hash, err := loadLastDeployedRevision(swarmStack.name)
 	if err != nil {
 		return "", fmt.Errorf("failed to read revision from db for %s stack: %w", swarmStack.name, err)
 	}
@@ -69,6 +69,17 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	stackBytes, err := swarmStack.readStack()
 	if err != nil {
 		return "", fmt.Errorf("failed to read stack for %s stack: %w", swarmStack.name, err)
+	}
+
+	if computeHash(stackBytes) == hash {
+		logger.Info(fmt.Sprintf("%s stack hash unchanged, will skip deployment: %s", swarmStack.name, revision))
+		log.Debug("saving current revision to db...")
+		err = saveLastDeployedRevision(swarmStack.name, revision, stackBytes)
+		if err != nil {
+			return revision, fmt.Errorf("failed to save revision to db for  %s stack: %w", swarmStack.name, err)
+		}
+
+		return revision, nil
 	}
 
 	if swarmStack.valuesFile != "" {
