@@ -12,14 +12,6 @@ var stacks []*swarmStack
 func Run() {
 	logger.Info("starting SwarmCD")
 
-	err := initDB(getDBFilePath())
-	defer closeDB()
-
-	if err != nil {
-		logger.Error(fmt.Sprintf("failed to initialize SwarmCD DB: %s", err))
-		return
-	}
-
 	for {
 		var waitGroup sync.WaitGroup
 		logger.Info("updating stacks...")

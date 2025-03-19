@@ -10,26 +10,22 @@ import (
 
 func TestSaveAndLoadLastDeployedRevision(t *testing.T) {
 	const dbFile = ":memory:" // Use in-memory database for tests
-	err := initDB(dbFile)
-	defer closeDB()
+	db, err := initDB(dbFile)
 	if err != nil {
 		t.Fatalf("failed to open database: %v", err)
 	}
-
-	if !initDBCalled {
-		t.Fatalf("InitDBCalled should be true")
-	}
+	defer db.Close()
 
 	stackName := "test-stack"
 	revision := "v1.0.0"
 	stackContent := []byte("test content")
 
-	err = saveLastDeployedRevision(stackName, revision, stackContent)
+	err = saveLastDeployedRevision(db, stackName, revision, stackContent)
 	if err != nil {
 		t.Fatalf("Failed to save revision: %v", err)
 	}
 
-	loadedRevision, loadedHash, err := loadLastDeployedRevision(stackName)
+	loadedRevision, loadedHash, err := loadLastDeployedRevision(db, stackName)
 	if err != nil {
 		t.Fatalf("Failed to load revision: %v", err)
 	}
@@ -42,23 +38,5 @@ func TestSaveAndLoadLastDeployedRevision(t *testing.T) {
 
 	if loadedHash != expectedHash {
 		t.Errorf("Expected hash %s, got %s", expectedHash, loadedHash)
-	}
-}
-
-func TestInitDbTwiceShouldWork(t *testing.T) {
-	const dbFile = ":memory:" // Use in-memory database for tests
-	err := initDB(dbFile)
-	defer closeDB()
-	if err != nil {
-		t.Fatalf("failed to open database: %v", err)
-	}
-
-	if !initDBCalled {
-		t.Fatalf("InitDBCalled should be true")
-	}
-
-	err = initDB(dbFile)
-	if err != nil {
-		t.Fatalf("failed to open database: %v", err)
 	}
 }

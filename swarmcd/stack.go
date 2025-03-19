@@ -49,7 +49,14 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 	log.Debug("changes pulled", "revision", revision)
 
-	lastRevision, hash, err := loadLastDeployedRevision(swarmStack.name)
+	db, err := initDB(getDBFilePath())
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to open database: %s", err))
+		return
+	}
+	defer db.Close()
+
+	lastRevision, hash, err := loadLastDeployedRevision(db, swarmStack.name)
 	if err != nil {
 		return "", fmt.Errorf("failed to read revision from db for %s stack: %w", swarmStack.name, err)
 	}
@@ -74,7 +81,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	if computeHash(stackBytes) == hash {
 		logger.Info(fmt.Sprintf("%s stack hash unchanged, will skip deployment: %s", swarmStack.name, revision))
 		log.Debug("saving current revision to db...")
-		err = saveLastDeployedRevision(swarmStack.name, revision, stackBytes)
+		err = saveLastDeployedRevision(db, swarmStack.name, revision, stackBytes)
 		if err != nil {
 			return revision, fmt.Errorf("failed to save revision to db for  %s stack: %w", swarmStack.name, err)
 		}
@@ -121,7 +128,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 
 	log.Debug("saving current revision to db...")
-	err = saveLastDeployedRevision(swarmStack.name, revision, writenBytes)
+	err = saveLastDeployedRevision(db, swarmStack.name, revision, writenBytes)
 	if err != nil {
 		return revision, fmt.Errorf("failed to save revision to db for  %s stack: %w", swarmStack.name, err)
 	}
