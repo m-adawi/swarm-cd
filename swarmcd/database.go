@@ -18,7 +18,7 @@ func getDBFilePath() string {
 }
 
 // Ensure database and table exist
-func initDB() (*sql.DB, error) {
+func initDB(dbFile string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite", dbFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
@@ -36,16 +36,10 @@ func initDB() (*sql.DB, error) {
 }
 
 // Save last deployed revision and hash
-func saveLastDeployedRevision(stackName, revision string, stackContent []byte) error {
-	db, err := initDB()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
+func saveLastDeployedRevision(db *sql.DB, stackName, revision string, stackContent []byte) error {
 	hash := computeHash(stackContent)
 
-	_, err = db.Exec(`
+	_, err := db.Exec(`
 		INSERT INTO revisions (stack, revision, hash) 
 		VALUES (?, ?, ?) 
 		ON CONFLICT(stack) DO UPDATE SET 
@@ -61,13 +55,7 @@ func saveLastDeployedRevision(stackName, revision string, stackContent []byte) e
 }
 
 // Load a stack's revision and hash
-func loadLastDeployedRevision(stackName string) (revision string, hash string, err error) {
-	db, err := initDB()
-	if err != nil {
-		return "", "", err
-	}
-	defer db.Close()
-
+func loadLastDeployedRevision(db *sql.DB, stackName string) (revision string, hash string, err error) {
 	err = db.QueryRow(`SELECT revision, hash FROM revisions WHERE stack = ?`, stackName).Scan(&revision, &hash)
 	if err == sql.ErrNoRows {
 		return "", "", nil

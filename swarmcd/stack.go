@@ -49,7 +49,13 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 	log.Debug("changes pulled", "revision", revision)
 
-	lastRevision, _, err := loadLastDeployedRevision(swarmStack.name)
+	db, err := initDB(getDBFilePath())
+	if err != nil {
+		return "", err
+	}
+	defer db.Close()
+
+	lastRevision, _, err := loadLastDeployedRevision(db, swarmStack.name)
 	if err != nil {
 		return "", fmt.Errorf("failed to read revision from db for %s stack: %w", swarmStack.name, err)
 	}
@@ -110,7 +116,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 
 	log.Debug("saving current revision to db...")
-	err = saveLastDeployedRevision(swarmStack.name, revision, writenBytes)
+	err = saveLastDeployedRevision(db, swarmStack.name, revision, writenBytes)
 	if err != nil {
 		return revision, fmt.Errorf("failed to save revision to db for  %s stack: %w", swarmStack.name, err)
 	}

@@ -10,17 +10,21 @@ import (
 
 func TestSaveAndLoadLastDeployedRevision(t *testing.T) {
 	const dbFile = ":memory:" // Use in-memory database for tests
+	db, err := initDB(dbFile)
+	if err != nil {
+		t.Fatalf("failed to open database: %v", err)
+	}
 
 	stackName := "test-stack"
 	revision := "v1.0.0"
 	stackContent := []byte("test content")
 
-	err := saveLastDeployedRevision(stackName, revision, stackContent)
+	err = saveLastDeployedRevision(db, stackName, revision, stackContent)
 	if err != nil {
 		t.Fatalf("Failed to save revision: %v", err)
 	}
 
-	loadedRevision, loadedHash, err := loadLastDeployedRevision(stackName)
+	loadedRevision, loadedHash, err := loadLastDeployedRevision(db, stackName)
 	if err != nil {
 		t.Fatalf("Failed to load revision: %v", err)
 	}
