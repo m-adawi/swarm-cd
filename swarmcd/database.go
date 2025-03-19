@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-var dbFile = getDBFilePath()
+var db *sql.DB
 
 func getDBFilePath() string {
 	if path := os.Getenv("SWARMCD_DB"); path != "" {
@@ -17,11 +17,16 @@ func getDBFilePath() string {
 	return "/data/revisions.db" // Default path
 }
 
+func closeDB() {
+	db.Close()
+}
+
 // Ensure database and table exist
-func initDB(dbFile string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite", dbFile)
+func initDB(dbFile string) error {
+	var err error
+	db, err = sql.Open("sqlite", dbFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
+		return fmt.Errorf("failed to open database: %w", err)
 	}
 
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS revisions (
@@ -30,13 +35,13 @@ func initDB(dbFile string) (*sql.DB, error) {
 		hash TEXT
 	)`)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create table: %w", err)
+		return fmt.Errorf("failed to create table: %w", err)
 	}
-	return db, nil
+	return nil
 }
 
 // Save last deployed revision and hash
-func saveLastDeployedRevision(db *sql.DB, stackName, revision string, stackContent []byte) error {
+func saveLastDeployedRevision(stackName, revision string, stackContent []byte) error {
 	hash := computeHash(stackContent)
 
 	_, err := db.Exec(`
@@ -55,7 +60,7 @@ func saveLastDeployedRevision(db *sql.DB, stackName, revision string, stackConte
 }
 
 // Load a stack's revision and hash
-func loadLastDeployedRevision(db *sql.DB, stackName string) (revision string, hash string, err error) {
+func loadLastDeployedRevision(stackName string) (revision string, hash string, err error) {
 	err = db.QueryRow(`SELECT revision, hash FROM revisions WHERE stack = ?`, stackName).Scan(&revision, &hash)
 	if err == sql.ErrNoRows {
 		return "", "", nil
