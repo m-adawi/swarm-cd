@@ -11,6 +11,7 @@ import (
 func TestSaveAndLoadLastDeployedRevision(t *testing.T) {
 	const dbFile = ":memory:" // Use in-memory database for tests
 	err := initDB(dbFile)
+	defer closeDB()
 	if err != nil {
 		t.Fatalf("failed to open database: %v", err)
 	}
@@ -41,5 +42,23 @@ func TestSaveAndLoadLastDeployedRevision(t *testing.T) {
 
 	if loadedHash != expectedHash {
 		t.Errorf("Expected hash %s, got %s", expectedHash, loadedHash)
+	}
+}
+
+func TestInitDbTwiceShouldWork(t *testing.T) {
+	const dbFile = ":memory:" // Use in-memory database for tests
+	err := initDB(dbFile)
+	defer closeDB()
+	if err != nil {
+		t.Fatalf("failed to open database: %v", err)
+	}
+
+	if !initDBCalled {
+		t.Fatalf("InitDBCalled should be true")
+	}
+
+	err = initDB(dbFile)
+	if err != nil {
+		t.Fatalf("failed to open database: %v", err)
 	}
 }
