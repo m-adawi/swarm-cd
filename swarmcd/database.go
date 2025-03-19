@@ -10,6 +10,9 @@ import (
 
 var db *sql.DB
 
+// Global flag to track if initDB has been called
+var initDBCalled = false
+
 func getDBFilePath() string {
 	if path := os.Getenv("SWARMCD_DB"); path != "" {
 		return path
@@ -23,6 +26,10 @@ func closeDB() {
 
 // Ensure database and table exist
 func initDB(dbFile string) error {
+	if initDBCalled {
+		return nil
+	}
+
 	var err error
 	db, err = sql.Open("sqlite", dbFile)
 	if err != nil {
@@ -37,6 +44,8 @@ func initDB(dbFile string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
+
+	initDBCalled = true
 	return nil
 }
 

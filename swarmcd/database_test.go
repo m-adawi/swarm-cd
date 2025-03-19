@@ -15,6 +15,10 @@ func TestSaveAndLoadLastDeployedRevision(t *testing.T) {
 		t.Fatalf("failed to open database: %v", err)
 	}
 
+	if !initDBCalled {
+		t.Fatalf("InitDBCalled should be true")
+	}
+
 	stackName := "test-stack"
 	revision := "v1.0.0"
 	stackContent := []byte("test content")
