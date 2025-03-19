@@ -1,8 +1,8 @@
 package swarmcd
 
 import (
+	"crypto/sha256"
 	"database/sql"
-	"errors"
 	"fmt"
 	_ "modernc.org/sqlite"
 	"os"
@@ -18,33 +18,40 @@ func getDBFilePath() string {
 }
 
 // Ensure database and table exist
-func initDB() error {
+func initDB() (*sql.DB, error) {
 	db, err := sql.Open("sqlite", dbFile)
 	if err != nil {
-		return fmt.Errorf("failed to open database: %w", err)
+		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
-	defer db.Close()
 
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS revisions (stack TEXT PRIMARY KEY, revision TEXT)`)
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS revisions (
+		stack TEXT PRIMARY KEY, 
+		revision TEXT, 
+		hash TEXT
+	)`)
 	if err != nil {
-		return fmt.Errorf("failed to create table: %w", err)
+		return nil, fmt.Errorf("failed to create table: %w", err)
 	}
-	return nil
+	return db, nil
 }
 
-func saveLastDeployedRevision(stackName, revision string) error {
-	err := initDB() // Ensure DB is initialized
-	if err != nil {
-		return err
-	}
-
-	db, err := sql.Open("sqlite", dbFile)
+// Save last deployed revision and hash
+func saveLastDeployedRevision(stackName, revision string, stackContent []byte) error {
+	db, err := initDB()
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	_, err = db.Exec(`INSERT INTO revisions (stack, revision) VALUES (?, ?) ON CONFLICT(stack) DO UPDATE SET revision = excluded.revision`, stackName, revision)
+	hash := computeHash(stackContent)
+
+	_, err = db.Exec(`
+		INSERT INTO revisions (stack, revision, hash) 
+		VALUES (?, ?, ?) 
+		ON CONFLICT(stack) DO UPDATE SET 
+			revision = excluded.revision, 
+			hash = excluded.hash
+	`, stackName, revision, hash)
 
 	if err != nil {
 		return fmt.Errorf("failed to save revision: %w", err)
@@ -53,28 +60,26 @@ func saveLastDeployedRevision(stackName, revision string) error {
 	return nil
 }
 
-// Load a stack's revision
-func loadLastDeployedRevision(stackName string) (revision string, err error) {
-	err = initDB() // Ensure DB is initialized
+// Load a stack's revision and hash
+func loadLastDeployedRevision(stackName string) (revision string, hash string, err error) {
+	db, err := initDB()
 	if err != nil {
-		return "", err
-	}
-
-	db, err := sql.Open("sqlite", dbFile)
-	if err != nil {
-		return "", fmt.Errorf("failed to open database: %w", err)
+		return "", "", err
 	}
 	defer db.Close()
 
-	err = db.QueryRow(`SELECT revision FROM revisions WHERE stack = ?`, stackName).Scan(&revision)
-
-	if errors.Is(err, sql.ErrNoRows) {
-		// No existing revision found
-		return "", nil
+	err = db.QueryRow(`SELECT revision, hash FROM revisions WHERE stack = ?`, stackName).Scan(&revision, &hash)
+	if err == sql.ErrNoRows {
+		return "", "", nil
 	} else if err != nil {
-		// Unexpected error
-		return "", fmt.Errorf("failed to query revision: %w", err)
+		return "", "", fmt.Errorf("failed to query revision: %w", err)
 	}
 
-	return revision, nil
+	return revision, hash, nil
+}
+
+// Compute a SHA-256 hash of the stack content
+func computeHash(data []byte) string {
+	hash := sha256.Sum256(data)
+	return fmt.Sprintf("%x", hash)
 }

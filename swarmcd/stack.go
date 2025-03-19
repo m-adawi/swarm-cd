@@ -49,7 +49,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 	log.Debug("changes pulled", "revision", revision)
 
-	lastRevision, err := loadLastDeployedRevision(swarmStack.name)
+	lastRevision, _, err := loadLastDeployedRevision(swarmStack.name)
 	if err != nil {
 		return "", fmt.Errorf("failed to read revision from db for %s stack: %w", swarmStack.name, err)
 	}
@@ -98,7 +98,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 
 	log.Debug("writing stack to file...")
-	err = swarmStack.writeStack(stackContents)
+	writenBytes, err := swarmStack.writeStack(stackContents)
 	if err != nil {
 		return "", fmt.Errorf("failed to write stack to file for %s stack: %w", swarmStack.name, err)
 	}
@@ -110,7 +110,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 
 	log.Debug("saving current revision to db...")
-	err = saveLastDeployedRevision(swarmStack.name, revision)
+	err = saveLastDeployedRevision(swarmStack.name, revision, writenBytes)
 	if err != nil {
 		return revision, fmt.Errorf("failed to save revision to db for  %s stack: %w", swarmStack.name, err)
 	}
@@ -232,15 +232,15 @@ func (swarmStack *swarmStack) rotateObjects(objects map[string]any) error {
 	return nil
 }
 
-func (swarmStack *swarmStack) writeStack(composeMap map[string]any) error {
+func (swarmStack *swarmStack) writeStack(composeMap map[string]any) ([]byte, error) {
 	composeFileBytes, err := yaml.Marshal(composeMap)
 	if err != nil {
-		return fmt.Errorf("could not store compose file as yaml after calculating hashes for stack %s", swarmStack.name)
+		return nil, fmt.Errorf("could not store compose file as yaml after calculating hashes for stack %s", swarmStack.name)
 	}
 	composeFile := path.Join(swarmStack.repo.path, swarmStack.composePath)
 	fileInfo, _ := os.Stat(composeFile)
 	os.WriteFile(composeFile, composeFileBytes, fileInfo.Mode())
-	return nil
+	return composeFileBytes, nil
 }
 
 func (swarmStack *swarmStack) deployStack() error {
