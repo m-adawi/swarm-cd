@@ -56,7 +56,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 	defer db.Close()
 
-	lastRevision, hash, err := loadLastDeployedRevision(db, swarmStack.name)
+	lastRevision, deployedStackHash, err := loadLastDeployedRevision(db, swarmStack.name)
 	if err != nil {
 		return "", fmt.Errorf("failed to read revision from db for %s stack: %w", swarmStack.name, err)
 	}
@@ -78,15 +78,12 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		return "", fmt.Errorf("failed to read stack for %s stack: %w", swarmStack.name, err)
 	}
 
-	if computeHash(stackBytes) == hash {
-		logger.Info(fmt.Sprintf("%s stack hash unchanged, will skip deployment: %s", swarmStack.name, revision))
-		log.Debug("saving current revision to db...")
-		err = saveLastDeployedRevision(db, swarmStack.name, revision, stackBytes)
-		if err != nil {
-			return revision, fmt.Errorf("failed to save revision to db for  %s stack: %w", swarmStack.name, err)
-		}
-
+	newStackHash := computeHash(stackBytes)
+	if newStackHash == deployedStackHash {
+		logger.Info(fmt.Sprintf("%s stack file deployedStackHash unchanged %s, will skip deployment of revision: %s", swarmStack.name, deployedStackHash, revision))
 		return revision, nil
+	} else {
+		logger.Info(fmt.Sprintf("%s new stack file with hash found: %s. Will continue with deployment of revision: %s", swarmStack.name, newStackHash, revision))
 	}
 
 	if swarmStack.valuesFile != "" {
