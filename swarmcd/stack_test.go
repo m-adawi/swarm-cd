@@ -8,22 +8,6 @@ import (
 	"testing"
 )
 
-func setupSwarmStackWithValues(t *testing.T, values string) *swarmStack {
-	t.Helper()
-	tempDir := t.TempDir()
-	valuesFilePath := path.Join(tempDir, "values.yaml")
-	if err := os.WriteFile(valuesFilePath, []byte(values), 0644); err != nil {
-		t.Fatalf("Failed to write values file: %v", err)
-	}
-
-	return &swarmStack{
-		name:            "testStack",
-		repo:            &stackRepo{path: tempDir},
-		valuesFile:      "values.yaml",
-		discoverSecrets: false,
-	}
-}
-
 func TestRenderComposeTemplate(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -123,6 +107,22 @@ func TestRotateObjectsFileNotFound(t *testing.T) {
 	err := swarm.rotateObjects(objects)
 	if err == nil {
 		t.Fatalf("Expected an error but got none")
+	}
+}
+
+func setupSwarmStackWithValues(t *testing.T, values string) *swarmStack {
+	t.Helper()
+	tempDir := t.TempDir()
+	valuesFilePath := path.Join(tempDir, "values.yaml")
+	if err := os.WriteFile(valuesFilePath, []byte(values), 0644); err != nil {
+		t.Fatalf("Failed to write values file: %v", err)
+	}
+
+	return &swarmStack{
+		name:            "testStack",
+		repo:            &stackRepo{path: tempDir},
+		valuesFile:      "values.yaml",
+		discoverSecrets: false,
 	}
 }
 
