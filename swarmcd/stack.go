@@ -109,14 +109,14 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 
 	dataToHash := append(stackBytes, dataBytes...)
 	newStackHash := computeHash(dataToHash)
-	logger.Debug(fmt.Sprintf("%s Old Stack hash: %s", swarmStack.name, deployedStackHash[:8]))
-	logger.Debug(fmt.Sprintf("%s New Stack hash: %s", swarmStack.name, newStackHash[:8]))
+	logger.Debug(fmt.Sprintf("%s Old Stack hash: %s", swarmStack.name, fmtHash(deployedStackHash)))
+	logger.Debug(fmt.Sprintf("%s New Stack hash: %s", swarmStack.name, fmtHash(newStackHash)))
 	if newStackHash == deployedStackHash {
-		logger.Info(fmt.Sprintf("%s stack file hash unchanged, hash=%s. Will skip deployment of revision: %s", swarmStack.name, deployedStackHash[:8], revision))
+		logger.Info(fmt.Sprintf("%s stack file hash unchanged, hash=%s. Will skip deployment of revision: %s", swarmStack.name, fmtHash(deployedStackHash), revision))
 		logger.Info(fmt.Sprintf("%s stack remains at revision: %s", swarmStack.name, lastRevision))
 		return revision, nil
 	} else {
-		logger.Info(fmt.Sprintf("%s new stack file with hash=%s found. Will continue with deployment of revision: %s", swarmStack.name, newStackHash[:8], revision))
+		logger.Info(fmt.Sprintf("%s new stack file with hash=%s found. Will continue with deployment of revision: %s", swarmStack.name, fmtHash(newStackHash), revision))
 	}
 
 	log.Debug("writing stack to file...")
@@ -291,4 +291,15 @@ func (swarmStack *swarmStack) deployStack() error {
 		return fmt.Errorf("could not deploy stack %s: %s", swarmStack.name, err)
 	}
 	return nil
+}
+
+func fmtHash(hash string) string {
+	var shortHash string
+	if len(hash) >= 8 {
+		shortHash = hash[:8]
+	} else {
+		shortHash = hash // Use as-is (empty or shorter than 8)
+	}
+
+	return shortHash
 }
