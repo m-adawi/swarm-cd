@@ -41,7 +41,7 @@ func TestRotateObjects(t *testing.T) {
 		"service1": map[string]any{"file": fileName},
 	}
 
-	err := swarm.rotateObjects(objects)
+	_, err := swarm.rotateObjects(objects)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -61,7 +61,7 @@ func TestRotateObjectsHandlesExternalTrue(t *testing.T) {
 		"config2": map[string]any{"file": configFile},
 	}
 
-	err := swarm.rotateObjects(objects)
+	_, err := swarm.rotateObjects(objects)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestRotateObjectsInvalidMap(t *testing.T) {
 
 	objects := map[string]any{"service1": "invalid"}
 
-	err := swarm.rotateObjects(objects)
+	_, err := swarm.rotateObjects(objects)
 	if err == nil {
 		t.Fatalf("Expected an error but got none")
 	}
@@ -90,7 +90,7 @@ func TestRotateObjectsMissingFileField(t *testing.T) {
 
 	objects := map[string]any{"service1": map[string]any{}}
 
-	err := swarm.rotateObjects(objects)
+	_, err := swarm.rotateObjects(objects)
 	if err == nil {
 		t.Fatalf("Expected an error but got none")
 	}
@@ -104,7 +104,7 @@ func TestRotateObjectsFileNotFound(t *testing.T) {
 	swarm := &swarmStack{name: "test-stack", repo: &stackRepo{path: "nonexistent"}, composePath: "docker-compose.yml"}
 	objects := map[string]any{"service1": map[string]any{"file": "missing.txt"}}
 
-	err := swarm.rotateObjects(objects)
+	_, err := swarm.rotateObjects(objects)
 	if err == nil {
 		t.Fatalf("Expected an error but got none")
 	}
