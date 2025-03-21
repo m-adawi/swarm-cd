@@ -78,17 +78,6 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		return "", fmt.Errorf("failed to read stack for %s stack: %w", swarmStack.name, err)
 	}
 
-	newStackHash := computeHash(stackBytes)
-	logger.Debug(fmt.Sprintf("%s Old Stack hash: %s", swarmStack.name, deployedStackHash[:8]))
-	logger.Debug(fmt.Sprintf("%s New Stack hash: %s", swarmStack.name, newStackHash[:8]))
-	if newStackHash == deployedStackHash {
-		logger.Info(fmt.Sprintf("%s stack file hash unchanged, hash=%s. Will skip deployment of revision: %s", swarmStack.name, deployedStackHash[:8], revision))
-		logger.Info(fmt.Sprintf("%s stack remains at revision: %s", swarmStack.name, lastRevision))
-		return revision, nil
-	} else {
-		logger.Info(fmt.Sprintf("%s new stack file with hash=%s found. Will continue with deployment of revision: %s", swarmStack.name, newStackHash[:8], revision))
-	}
-
 	if swarmStack.valuesFile != "" {
 		log.Debug("rendering template...")
 		stackBytes, err = swarmStack.renderComposeTemplate(stackBytes)
@@ -110,9 +99,24 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 
 	log.Debug("rotating configs and secrets...")
-	err = swarmStack.rotateConfigsAndSecrets(stackContents)
+	// This contains all the new data of the config and secrets.
+	// We use this to determine if the stack has changed, and we
+	// need to redeploy.
+	dataBytes, err := swarmStack.rotateConfigsAndSecrets(stackContents)
 	if err != nil {
 		return "", fmt.Errorf("failed to rotate configs and secrets for %s stack: %w", swarmStack.name, err)
+	}
+
+	dataToHash := append(stackBytes, dataBytes...)
+	newStackHash := computeHash(dataToHash)
+	logger.Debug(fmt.Sprintf("%s Old Stack hash: %s", swarmStack.name, deployedStackHash[:8]))
+	logger.Debug(fmt.Sprintf("%s New Stack hash: %s", swarmStack.name, newStackHash[:8]))
+	if newStackHash == deployedStackHash {
+		logger.Info(fmt.Sprintf("%s stack file hash unchanged, hash=%s. Will skip deployment of revision: %s", swarmStack.name, deployedStackHash[:8], revision))
+		logger.Info(fmt.Sprintf("%s stack remains at revision: %s", swarmStack.name, lastRevision))
+		return revision, nil
+	} else {
+		logger.Info(fmt.Sprintf("%s new stack file with hash=%s found. Will continue with deployment of revision: %s", swarmStack.name, newStackHash[:8], revision))
 	}
 
 	log.Debug("writing stack to file...")
@@ -128,7 +132,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 
 	log.Debug("saving current revision to db...")
-	err = saveLastDeployedRevision(db, swarmStack.name, revision, stackBytes)
+	err = saveLastDeployedRevision(db, swarmStack.name, revision, dataToHash)
 	if err != nil {
 		return revision, fmt.Errorf("failed to save revision to db for  %s stack: %w", swarmStack.name, err)
 	}
@@ -212,28 +216,33 @@ func discoverSecrets(composeMap map[string]any, composePath string) ([]string, e
 	return sopsFiles, nil
 }
 
-func (swarmStack *swarmStack) rotateConfigsAndSecrets(composeMap map[string]any) error {
+func (swarmStack *swarmStack) rotateConfigsAndSecrets(composeMap map[string]any) ([]byte, error) {
+	var dataBytes []byte
 	if configs, ok := composeMap["configs"].(map[string]any); ok {
-		err := swarmStack.rotateObjects(configs)
+		configBytes, err := swarmStack.rotateObjects(configs)
+		dataBytes = append(dataBytes, configBytes...)
+
 		if err != nil {
-			return fmt.Errorf("could not rotate one or more config files of stack %s: %w", swarmStack.name, err)
+			return nil, fmt.Errorf("could not rotate one or more config files of stack %s: %w", swarmStack.name, err)
 		}
 	}
 	if secrets, ok := composeMap["secrets"].(map[string]any); ok {
-		err := swarmStack.rotateObjects(secrets)
+		secretsByte, err := swarmStack.rotateObjects(secrets)
+		dataBytes = append(dataBytes, secretsByte...)
 		if err != nil {
-			return fmt.Errorf("could not rotate one or more secret files of stack %s: %w", swarmStack.name, err)
+			return nil, fmt.Errorf("could not rotate one or more secret files of stack %s: %w", swarmStack.name, err)
 		}
 	}
-	return nil
+	return dataBytes, nil
 }
 
-func (swarmStack *swarmStack) rotateObjects(objects map[string]any) error {
+func (swarmStack *swarmStack) rotateObjects(objects map[string]any) ([]byte, error) {
 	objectsDir := path.Dir(path.Join(swarmStack.repo.path, swarmStack.composePath))
+	var configBytes []byte
 	for objectName, object := range objects {
 		objectMap, ok := object.(map[string]any)
 		if !ok {
-			return fmt.Errorf("invalid compose file: %s object must be a map", objectName)
+			return nil, fmt.Errorf("invalid compose file: %s object must be a map", objectName)
 		}
 		// If "external" field exists and is true, skip processing
 		if external, exists := objectMap["external"].(bool); exists && external {
@@ -241,17 +250,18 @@ func (swarmStack *swarmStack) rotateObjects(objects map[string]any) error {
 		}
 		objectFile, ok := objectMap["file"].(string)
 		if !ok {
-			return fmt.Errorf("invalid compose file: %s file field must be a string", objectName)
+			return nil, fmt.Errorf("invalid compose file: %s file field must be a string", objectName)
 		}
 		objectFilePath := path.Join(objectsDir, objectFile)
 		configFileBytes, err := os.ReadFile(objectFilePath)
+		configBytes = append(configBytes, configFileBytes...)
 		if err != nil {
-			return fmt.Errorf("could not read file %s for rotation: %w", objectFilePath, err)
+			return nil, fmt.Errorf("could not read file %s for rotation: %w", objectFilePath, err)
 		}
 		hash := fmt.Sprintf("%x", md5.Sum(configFileBytes))[:8]
 		objectMap["name"] = swarmStack.name + "-" + objectName + "-" + hash
 	}
-	return nil
+	return configBytes, nil
 }
 
 func (swarmStack *swarmStack) writeStack(composeMap map[string]any) error {
