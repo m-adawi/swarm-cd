@@ -79,11 +79,13 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 
 	newStackHash := computeHash(stackBytes)
+	logger.Info(fmt.Sprintf("%s Old Stack hash: %s", swarmStack.name, deployedStackHash[:8]))
+	logger.Info(fmt.Sprintf("%s New Stack hash: %s", swarmStack.name, newStackHash[:8]))
 	if newStackHash == deployedStackHash {
-		logger.Info(fmt.Sprintf("%s stack file deployedStackHash unchanged %s, will skip deployment of revision: %s", swarmStack.name, deployedStackHash, revision))
+		logger.Info(fmt.Sprintf("%s stack file deployedStackHash unchanged %s, will skip deployment of revision: %s", swarmStack.name, deployedStackHash[:8], revision))
 		return revision, nil
 	} else {
-		logger.Info(fmt.Sprintf("%s new stack file with hash found: %s. Will continue with deployment of revision: %s", swarmStack.name, newStackHash, revision))
+		logger.Info(fmt.Sprintf("%s new stack file with hash found: %s. Will continue with deployment of revision: %s", swarmStack.name, newStackHash[:8], revision))
 	}
 
 	if swarmStack.valuesFile != "" {
@@ -113,7 +115,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 
 	log.Debug("writing stack to file...")
-	writenBytes, err := swarmStack.writeStack(stackContents)
+	err = swarmStack.writeStack(stackContents)
 	if err != nil {
 		return "", fmt.Errorf("failed to write stack to file for %s stack: %w", swarmStack.name, err)
 	}
@@ -125,7 +127,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 
 	log.Debug("saving current revision to db...")
-	err = saveLastDeployedRevision(db, swarmStack.name, revision, writenBytes)
+	err = saveLastDeployedRevision(db, swarmStack.name, revision, stackBytes)
 	if err != nil {
 		return revision, fmt.Errorf("failed to save revision to db for  %s stack: %w", swarmStack.name, err)
 	}
@@ -251,15 +253,15 @@ func (swarmStack *swarmStack) rotateObjects(objects map[string]any) error {
 	return nil
 }
 
-func (swarmStack *swarmStack) writeStack(composeMap map[string]any) ([]byte, error) {
+func (swarmStack *swarmStack) writeStack(composeMap map[string]any) error {
 	composeFileBytes, err := yaml.Marshal(composeMap)
 	if err != nil {
-		return nil, fmt.Errorf("could not store compose file as yaml after calculating hashes for stack %s", swarmStack.name)
+		return fmt.Errorf("could not store compose file as yaml after calculating hashes for stack %s", swarmStack.name)
 	}
 	composeFile := path.Join(swarmStack.repo.path, swarmStack.composePath)
 	fileInfo, _ := os.Stat(composeFile)
 	os.WriteFile(composeFile, composeFileBytes, fileInfo.Mode())
-	return composeFileBytes, nil
+	return nil
 }
 
 func (swarmStack *swarmStack) deployStack() error {
