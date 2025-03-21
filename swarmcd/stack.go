@@ -79,13 +79,13 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 
 	newStackHash := computeHash(stackBytes)
-	logger.Info(fmt.Sprintf("%s Old Stack hash: %s", swarmStack.name, deployedStackHash[:8]))
-	logger.Info(fmt.Sprintf("%s New Stack hash: %s", swarmStack.name, newStackHash[:8]))
+	logger.Debug(fmt.Sprintf("%s Old Stack hash: %s", swarmStack.name, deployedStackHash[:8]))
+	logger.Debug(fmt.Sprintf("%s New Stack hash: %s", swarmStack.name, newStackHash[:8]))
 	if newStackHash == deployedStackHash {
-		logger.Info(fmt.Sprintf("%s stack file deployedStackHash unchanged %s, will skip deployment of revision: %s", swarmStack.name, deployedStackHash[:8], revision))
+		logger.Info(fmt.Sprintf("%s stack file deployedStackHash unchanged %s. Will skip deployment of revision: %s", swarmStack.name, deployedStackHash[:8], revision))
 		return revision, nil
 	} else {
-		logger.Info(fmt.Sprintf("%s new stack file with hash found: %s. Will continue with deployment of revision: %s", swarmStack.name, newStackHash[:8], revision))
+		logger.Info(fmt.Sprintf("%s new stack file with hash= %s found. Will continue with deployment of revision: %s", swarmStack.name, newStackHash[:8], revision))
 	}
 
 	if swarmStack.valuesFile != "" {
