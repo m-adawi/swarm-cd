@@ -298,7 +298,7 @@ func fmtHash(hash string) string {
 	if len(hash) >= 8 {
 		shortHash = hash[:8]
 	} else {
-		shortHash = hash // Use as-is (empty or shorter than 8)
+		shortHash = "<empty-hash>"
 	}
 
 	return shortHash
