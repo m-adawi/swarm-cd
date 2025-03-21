@@ -83,10 +83,10 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	logger.Debug(fmt.Sprintf("%s New Stack hash: %s", swarmStack.name, newStackHash[:8]))
 	if newStackHash == deployedStackHash {
 		logger.Info(fmt.Sprintf("%s stack file hash unchanged, hash=%s. Will skip deployment of revision: %s", swarmStack.name, deployedStackHash[:8], revision))
+		logger.Info(fmt.Sprintf("%s stack remains at revision: %s", swarmStack.name, lastRevision))
 		return revision, nil
 	} else {
 		logger.Info(fmt.Sprintf("%s new stack file with hash=%s found. Will continue with deployment of revision: %s", swarmStack.name, newStackHash[:8], revision))
-		logger.Info(fmt.Sprintf("%s stack remains at revision: %s", swarmStack.name, revision))
 	}
 
 	if swarmStack.valuesFile != "" {
