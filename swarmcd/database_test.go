@@ -17,7 +17,7 @@ func TestSaveAndLoadLastDeployedRevision(t *testing.T) {
 	defer db.Close()
 
 	stackName := "test-stack"
-	revision := "v1.0.0"
+	revision := "abcdefgh"
 	stackContent := []byte("test content")
 
 	err = saveLastDeployedRevision(db, stackName, revision, stackContent)
