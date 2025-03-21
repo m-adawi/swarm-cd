@@ -1,6 +1,8 @@
 package swarmcd
 
 import (
+	"crypto/md5"
+	"fmt"
 	"os"
 	"path"
 	"testing"
@@ -46,4 +48,74 @@ func TestRenderComposeTemplate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRotateObjects(t *testing.T) {
+	fileContent, swarm := setupTestStack(t)
+
+	objects := map[string]any{
+		"service1": map[string]any{"file": "testfile.txt"},
+	}
+
+	err := swarm.rotateObjects(objects)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	expectedHash := fmt.Sprintf("%x", md5.Sum(fileContent))[:8]
+	expectedName := "test-stack-service1-" + expectedHash
+	if objects["service1"].(map[string]any)["name"] != expectedName {
+		t.Errorf("Expected name %s, got %s", expectedName, objects["service1"].(map[string]any)["name"])
+	}
+}
+
+func TestRotateObjectsInvalidMap(t *testing.T) {
+	_, swarm := setupTestStack(t)
+
+	objects := map[string]any{"service1": "invalid"}
+
+	err := swarm.rotateObjects(objects)
+	if err == nil {
+		t.Fatalf("Expected an error but got none")
+	}
+	expectedErr := "invalid compose file: service1 object must be a map"
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error %q, got %q", expectedErr, err.Error())
+	}
+}
+
+func TestRotateObjectsMissingFileField(t *testing.T) {
+	_, swarm := setupTestStack(t)
+
+	objects := map[string]any{"service1": map[string]any{}}
+
+	err := swarm.rotateObjects(objects)
+	if err == nil {
+		t.Fatalf("Expected an error but got none")
+	}
+	expectedErr := "invalid compose file: service1 file field must be a string"
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error %q, got %q", expectedErr, err.Error())
+	}
+}
+
+func TestRotateObjectsFileNotFound(t *testing.T) {
+	swarm := &swarmStack{name: "test-stack", repo: &stackRepo{path: "nonexistent"}, composePath: "docker-compose.yml"}
+	objects := map[string]any{"service1": map[string]any{"file": "missing.txt"}}
+
+	err := swarm.rotateObjects(objects)
+	if err == nil {
+		t.Fatalf("Expected an error but got none")
+	}
+}
+
+func setupTestStack(t *testing.T) ([]byte, *swarmStack) {
+	tempDir := t.TempDir()
+	filePath := path.Join(tempDir, "testfile.txt")
+	fileContent := []byte("test content")
+	os.WriteFile(filePath, fileContent, 0644)
+
+	repo := &stackRepo{path: tempDir}
+	swarm := &swarmStack{name: "test-stack", repo: repo, composePath: "docker-compose.yml"}
+	return fileContent, swarm
 }
