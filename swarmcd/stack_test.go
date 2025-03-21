@@ -12,7 +12,7 @@ func TestRotateExternalObjects(t *testing.T) {
 	objects := map[string]any{
 		"my-secret": map[string]any{"external": true},
 	}
-	err := stack.rotateObjects(objects)
+	err := stack.rotateObjects(objects, "secrets")
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
