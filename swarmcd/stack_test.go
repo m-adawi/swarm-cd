@@ -51,10 +51,10 @@ func TestRenderComposeTemplate(t *testing.T) {
 }
 
 func TestRotateObjects(t *testing.T) {
-	fileContent, swarm := setupTestStack(t)
+	fileName, fileContent, swarm := setupTestStack(t)
 
 	objects := map[string]any{
-		"service1": map[string]any{"file": "testfile.txt"},
+		"service1": map[string]any{"file": fileName},
 	}
 
 	err := swarm.rotateObjects(objects)
@@ -69,8 +69,25 @@ func TestRotateObjects(t *testing.T) {
 	}
 }
 
+func TestRotateObjectsHandlesExternalTrue(t *testing.T) {
+	configFile, _, swarm := setupTestStack(t)
+
+	objects := map[string]any{
+		"config1": map[string]any{"external": true},
+		"config2": map[string]any{"file": configFile},
+	}
+
+	err := swarm.rotateObjects(objects)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if _, exists := objects["config1"].(map[string]any)["name"]; exists {
+		t.Errorf("Expected config1 to be unmodified, but 'name' was set")
+	}
+}
+
 func TestRotateObjectsInvalidMap(t *testing.T) {
-	_, swarm := setupTestStack(t)
+	_, _, swarm := setupTestStack(t)
 
 	objects := map[string]any{"service1": "invalid"}
 
@@ -85,7 +102,7 @@ func TestRotateObjectsInvalidMap(t *testing.T) {
 }
 
 func TestRotateObjectsMissingFileField(t *testing.T) {
-	_, swarm := setupTestStack(t)
+	_, _, swarm := setupTestStack(t)
 
 	objects := map[string]any{"service1": map[string]any{}}
 
@@ -109,13 +126,14 @@ func TestRotateObjectsFileNotFound(t *testing.T) {
 	}
 }
 
-func setupTestStack(t *testing.T) ([]byte, *swarmStack) {
+func setupTestStack(t *testing.T) (string, []byte, *swarmStack) {
 	tempDir := t.TempDir()
-	filePath := path.Join(tempDir, "testfile.txt")
+	fileName := "testfile.txt"
+	filePath := path.Join(tempDir, fileName)
 	fileContent := []byte("test content")
 	os.WriteFile(filePath, fileContent, 0644)
 
 	repo := &stackRepo{path: tempDir}
 	swarm := &swarmStack{name: "test-stack", repo: repo, composePath: "docker-compose.yml"}
-	return fileContent, swarm
+	return fileName, fileContent, swarm
 }
