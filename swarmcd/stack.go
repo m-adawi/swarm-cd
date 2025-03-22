@@ -55,16 +55,16 @@ func (swarmStack *swarmStack) updateStack() (stackMetadata *stackMetadata, err e
 	}
 	defer stackDb.close()
 
-	deployedVersion, err := stackDb.loadLastDeployedMetadata()
+	deployedMetadata, err := stackDb.loadLastDeployedMetadata()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read revision from stackDb for %s stack: %w", swarmStack.name, err)
 	}
 
-	if deployedVersion.repoRevision == revision {
+	if deployedMetadata.repoRevision == revision {
 		logger.Info(fmt.Sprintf("%s revision unchanged: stack up-to-date on rev: %s", swarmStack.name, revision))
-		return deployedVersion, nil
+		return deployedMetadata, nil
 	}
-	if deployedVersion.repoRevision == "" {
+	if deployedMetadata.repoRevision == "" {
 		logger.Info(fmt.Sprintf("%s no last revision found", swarmStack.name))
 	}
 
@@ -108,9 +108,9 @@ func (swarmStack *swarmStack) updateStack() (stackMetadata *stackMetadata, err e
 		return nil, fmt.Errorf("failed to write stack to file for %s stack: %w", swarmStack.name, err)
 	}
 
-	updatedVersion := newStackMetadataFromStackData(revision, revision, writtenBytes)
+	updatedMetadata := newStackMetadataFromStackData(revision, revision, writtenBytes)
 
-	if swarmStack.shouldDeploy(updatedVersion, deployedVersion) {
+	if swarmStack.shouldDeploy(updatedMetadata, deployedMetadata) {
 		log.Debug("deploying stack...")
 		err = swarmStack.deployStack()
 		if err != nil {
@@ -118,21 +118,21 @@ func (swarmStack *swarmStack) updateStack() (stackMetadata *stackMetadata, err e
 		}
 
 		log.Debug("saving current stack's metadata to stackDb...")
-		err = stackDb.saveLastDeployedMetadata(updatedVersion)
+		err = stackDb.saveLastDeployedMetadata(updatedMetadata)
 		if err != nil {
 			return nil, fmt.Errorf("failed to save new stackMetadata to stackDb for  %s stack: %w", swarmStack.name, err)
 		}
 
-		return updatedVersion, nil
+		return updatedMetadata, nil
 	} else {
-		log.Debug("updating deployedVersion.repoRevision in stackDb...")
-		deployedVersion.repoRevision = revision
-		err = stackDb.saveLastDeployedMetadata(deployedVersion)
+		log.Debug("updating deployedMetadata.repoRevision in stackDb...")
+		deployedMetadata.repoRevision = revision
+		err = stackDb.saveLastDeployedMetadata(deployedMetadata)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update stackMetadata in stackDb for  %s stack: %w", swarmStack.name, err)
 		}
 
-		return deployedVersion, nil
+		return deployedMetadata, nil
 	}
 }
 
