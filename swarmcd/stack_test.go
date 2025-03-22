@@ -1,8 +1,6 @@
 package swarmcd
 
 import (
-	"crypto/md5"
-	"fmt"
 	"os"
 	"path"
 	"sync"
@@ -42,7 +40,7 @@ func TestRotateExternalObjects(t *testing.T) {
 	objects := map[string]any{
 		"my-secret": map[string]any{"external": true},
 	}
-	_, err := stack.rotateObjects(objects, "secrets")
+	err := stack.rotateObjects(objects, "secrets")
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -56,7 +54,7 @@ func TestRotateObjectsHandlesExternalTrue(t *testing.T) {
 		"config2": map[string]any{"file": configFile},
 	}
 
-	_, err := swarm.rotateObjects(objects, "secrets")
+	err := swarm.rotateObjects(objects, "secrets")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -70,7 +68,7 @@ func TestRotateObjectsInvalidMap(t *testing.T) {
 
 	objects := map[string]any{"service1": "invalid"}
 
-	_, err := swarm.rotateObjects(objects, "secrets")
+	err := swarm.rotateObjects(objects, "secrets")
 	if err == nil {
 		t.Fatalf("Expected an error but got none")
 	}
@@ -85,7 +83,7 @@ func TestRotateObjectsMissingFileField(t *testing.T) {
 
 	objects := map[string]any{"service1": map[string]any{}}
 
-	_, err := swarm.rotateObjects(objects, "secrets")
+	err := swarm.rotateObjects(objects, "secrets")
 	if err == nil {
 		t.Fatalf("Expected an error but got none")
 	}
@@ -99,7 +97,7 @@ func TestRotateObjectsFileNotFound(t *testing.T) {
 	swarm := &swarmStack{name: "test-stack", repo: &stackRepo{path: "nonexistent"}, composePath: "docker-compose.yml"}
 	objects := map[string]any{"service1": map[string]any{"file": "missing.txt"}}
 
-	_, err := swarm.rotateObjects(objects, "secrets")
+	err := swarm.rotateObjects(objects, "secrets")
 	if err == nil {
 		t.Fatalf("Expected an error but got none")
 	}
