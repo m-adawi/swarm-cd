@@ -2,6 +2,7 @@ package swarmcd
 
 import (
 	"testing"
+	"time"
 )
 
 import (
@@ -17,27 +18,48 @@ func TestSaveAndLoadLastDeployedRevision(t *testing.T) {
 	defer db.Close()
 
 	stackName := "test-stack"
-	revision := "abcdefgh"
+	repoRevision := "abcdefgh"
+	stackRevision := "12345678"
 	stackContent := []byte("test content")
 
-	version := newVersionFromData(revision, stackContent)
+	version := newVersionFromData(repoRevision, stackRevision, stackContent)
+	now := time.Now()
+	version.deployedAt = now
+
 	err = saveLastDeployedRevision(db, stackName, version)
 	if err != nil {
-		t.Fatalf("Failed to save revision: %v", err)
+		t.Fatalf("Failed to save repoRevision: %v", err)
 	}
 
 	loadedVersion, err := loadLastDeployedRevision(db, stackName)
 	if err != nil {
-		t.Fatalf("Failed to load revision: %v", err)
+		t.Fatalf("Failed to load repoRevision: %v", err)
 	}
 
 	expectedHash := computeHash(stackContent)
 
-	if loadedVersion.revision != revision {
-		t.Errorf("Expected revision %s, got %s", revision, loadedVersion.revision)
+	if loadedVersion.repoRevision != repoRevision {
+		t.Errorf("Expected repoRevision %s, got %s", repoRevision, loadedVersion.repoRevision)
+	}
+
+	if loadedVersion.deployedStackRevision != stackRevision {
+		t.Errorf("Expected repoRevision %s, got %s", repoRevision, loadedVersion.deployedStackRevision)
+	}
+
+	if !isRoughlyEqual(loadedVersion.deployedAt, now, 1*time.Microsecond) {
+		t.Errorf("Expected time %s, got %s", now, loadedVersion.deployedAt)
 	}
 
 	if loadedVersion.hash != expectedHash {
 		t.Errorf("Expected hash %s, got %s", expectedHash, loadedVersion.hash)
 	}
+}
+
+func isRoughlyEqual(t1, t2 time.Time, tolerance time.Duration) bool {
+	diff := t2.Sub(t1)
+	// Check if the difference is within the tolerance
+	if diff < 0 {
+		diff = -diff // Handle negative difference
+	}
+	return diff <= tolerance
 }

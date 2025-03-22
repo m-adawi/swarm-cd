@@ -36,14 +36,14 @@ func newSwarmStack(name string, repo *stackRepo, branch string, composePath stri
 	}
 }
 
-func (swarmStack *swarmStack) updateStack() (revision string, err error) {
+func (swarmStack *swarmStack) updateStack() (stackMetadata *stackMetadata, err error) {
 	log := logger.With(
 		slog.String("stack", swarmStack.name),
 		slog.String("branch", swarmStack.branch),
 	)
 
 	log.Debug("pulling changes...")
-	revision, err = swarmStack.repo.pullChanges(swarmStack.branch)
+	revision, err := swarmStack.repo.pullChanges(swarmStack.branch)
 	if err != nil {
 		return
 	}
@@ -51,20 +51,20 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 
 	db, err := initDB(getDBFilePath())
 	if err != nil {
-		return "", fmt.Errorf("failed to open database: %s", err)
+		return nil, fmt.Errorf("failed to open database: %s", err)
 	}
 	defer db.Close()
 
 	deployedVersion, err := loadLastDeployedRevision(db, swarmStack.name)
 	if err != nil {
-		return "", fmt.Errorf("failed to read revision from db for %s stack: %w", swarmStack.name, err)
+		return nil, fmt.Errorf("failed to read revision from db for %s stack: %w", swarmStack.name, err)
 	}
 
-	if deployedVersion.revision == revision {
+	if deployedVersion.repoRevision == revision {
 		logger.Info(fmt.Sprintf("%s revision unchanged: stack up-to-date on rev: %s", swarmStack.name, revision))
-		return revision, nil
+		return deployedVersion, nil
 	}
-	if deployedVersion.revision == "" {
+	if deployedVersion.repoRevision == "" {
 		logger.Info(fmt.Sprintf("%s no last revision found", swarmStack.name))
 	}
 
@@ -73,7 +73,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	log.Debug("reading stack file...")
 	stackBytes, err := swarmStack.readStack()
 	if err != nil {
-		return "", fmt.Errorf("failed to read stack for %s stack: %w", swarmStack.name, err)
+		return nil, fmt.Errorf("failed to read stack for %s stack: %w", swarmStack.name, err)
 	}
 
 	if swarmStack.valuesFile != "" {
@@ -81,47 +81,52 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		stackBytes, err = swarmStack.renderComposeTemplate(stackBytes)
 	}
 	if err != nil {
-		return "", fmt.Errorf("failed to render compose template for %s stack: %w", swarmStack.name, err)
+		return nil, fmt.Errorf("failed to render compose template for %s stack: %w", swarmStack.name, err)
 	}
 
 	log.Debug("parsing stack content...")
 	stackContents, err := swarmStack.parseStackString([]byte(stackBytes))
 	if err != nil {
-		return "", fmt.Errorf("failed to parse stack content for %s stack: %w", swarmStack.name, err)
+		return nil, fmt.Errorf("failed to parse stack content for %s stack: %w", swarmStack.name, err)
 	}
 
 	log.Debug("decrypting secrets...")
 	err = swarmStack.decryptSopsFiles(stackContents)
 	if err != nil {
-		return "", fmt.Errorf("failed to decrypt one or more sops files for %s stack: %w", swarmStack.name, err)
+		return nil, fmt.Errorf("failed to decrypt one or more sops files for %s stack: %w", swarmStack.name, err)
 	}
 
 	log.Debug("rotating configs and secrets...")
 	err = swarmStack.rotateConfigsAndSecrets(stackContents)
 	if err != nil {
-		return "", fmt.Errorf("failed to rotate configs and secrets for %s stack: %w", swarmStack.name, err)
+		return nil, fmt.Errorf("failed to rotate configs and secrets for %s stack: %w", swarmStack.name, err)
 	}
 
 	log.Debug("writing stack to file...")
 	writtenBytes, err := swarmStack.writeStack(stackContents)
 	if err != nil {
-		return "", fmt.Errorf("failed to write stack to file for %s stack: %w", swarmStack.name, err)
+		return nil, fmt.Errorf("failed to write stack to file for %s stack: %w", swarmStack.name, err)
 	}
 
-	updatedVersion := newVersionFromData(revision, writtenBytes)
+	updatedVersion := newVersionFromData(revision, revision, writtenBytes)
 
 	if swarmStack.shouldDeploy(updatedVersion, deployedVersion) {
 		log.Debug("deploying stack...")
 		err = swarmStack.deployStack()
 		if err != nil {
-			return revision, fmt.Errorf("failed to deploy stack for  %s stack: %w", swarmStack.name, err)
+			return nil, fmt.Errorf("failed to deploy stack for  %s stack: %w", swarmStack.name, err)
 		}
+
+		log.Debug("saving current stack's metadata to db...")
+		err = saveLastDeployedRevision(db, swarmStack.name, updatedVersion)
+	} else {
+		log.Debug("updating stacks.repoRevision in db...")
+		deployedVersion.repoRevision = revision
+		err = saveLastDeployedRevision(db, swarmStack.name, deployedVersion)
 	}
 
-	log.Debug("saving current revision to db...")
-	err = saveLastDeployedRevision(db, swarmStack.name, updatedVersion)
 	if err != nil {
-		return revision, fmt.Errorf("failed to save revision to db for  %s stack: %w", swarmStack.name, err)
+		return nil, fmt.Errorf("failed to save revision to db for  %s stack: %w", swarmStack.name, err)
 	}
 
 	return
@@ -274,15 +279,15 @@ func (swarmStack *swarmStack) writeStack(composeMap map[string]any) ([]byte, err
 	return composeFileBytes, nil
 }
 
-func (swarmStack *swarmStack) shouldDeploy(newVersion *version, deployedVersion *version) bool {
-	logger.Debug(fmt.Sprintf("%s Old Stack hash: %s", swarmStack.name, deployedVersion.fmtHash()))
-	logger.Debug(fmt.Sprintf("%s New Stack hash: %s", swarmStack.name, newVersion.fmtHash()))
-	if newVersion.hash == deployedVersion.hash {
-		logger.Info(fmt.Sprintf("%s stack file hash unchanged, hash=%s. Will skip deployment of revision: %s", swarmStack.name, deployedVersion.fmtHash(), newVersion.revision))
-		logger.Info(fmt.Sprintf("%s stack remains at revision: %s", swarmStack.name, deployedVersion.hash))
+func (swarmStack *swarmStack) shouldDeploy(newMetadata *stackMetadata, deployedMetadata *stackMetadata) bool {
+	logger.Debug(fmt.Sprintf("%s Old Stack hash: %s", swarmStack.name, deployedMetadata.fmtHash()))
+	logger.Debug(fmt.Sprintf("%s New Stack hash: %s", swarmStack.name, newMetadata.fmtHash()))
+	if newMetadata.hash == deployedMetadata.hash {
+		logger.Info(fmt.Sprintf("%s stack file hash unchanged, hash=%s. Will skip deployment of revision: %s", swarmStack.name, deployedMetadata.fmtHash(), newMetadata.repoRevision))
+		logger.Info(fmt.Sprintf("%s stack remains at revision: %s", swarmStack.name, deployedMetadata.deployedStackRevision))
 		return false
 	}
-	logger.Info(fmt.Sprintf("%s new stack file with hash=%s found. Will continue with deployment of revision: %s", swarmStack.name, newVersion.fmtHash(), newVersion.revision))
+	logger.Info(fmt.Sprintf("%s new stack file with hash=%s found. Will continue with deployment of revision: %s", swarmStack.name, newMetadata.fmtHash(), newMetadata.repoRevision))
 	return true
 }
 

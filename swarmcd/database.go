@@ -6,28 +6,35 @@ import (
 	"fmt"
 	_ "modernc.org/sqlite"
 	"os"
+	"time"
 )
 
-type version struct {
-	revision string
-	hash     string
+type stackMetadata struct {
+	repoRevision          string
+	deployedStackRevision string
+	deployedAt            time.Time
+	hash                  string
 }
 
-func newVersion(revision string, hash string) *version {
-	return &version{
-		revision: revision,
-		hash:     hash,
+func newVersion(repoRevision string, stackRevision string, hash string, time time.Time) *stackMetadata {
+	return &stackMetadata{
+		repoRevision:          repoRevision,
+		deployedStackRevision: stackRevision,
+		hash:                  hash,
+		deployedAt:            time,
 	}
 }
 
-func newVersionFromData(revision string, data []byte) *version {
-	return &version{
-		revision: revision,
-		hash:     computeHash(data),
+func newVersionFromData(repoRevision string, stackRevision string, data []byte) *stackMetadata {
+	return &stackMetadata{
+		repoRevision:          repoRevision,
+		deployedStackRevision: stackRevision,
+		hash:                  computeHash(data),
+		deployedAt:            time.Now(),
 	}
 }
 
-func (version *version) fmtHash() string {
+func (version *stackMetadata) fmtHash() string {
 	return fmtHash(version.hash)
 }
 
@@ -47,8 +54,10 @@ func initDB(dbFile string) (*sql.DB, error) {
 
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS revisions (
 		stack TEXT PRIMARY KEY, 
-		revision TEXT, 
-		hash TEXT
+		repo_revision TEXT, 
+		deployed_stack_revision TEXT, 
+		hash TEXT, 
+		deployed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	)`)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create table: %w", err)
@@ -57,16 +66,17 @@ func initDB(dbFile string) (*sql.DB, error) {
 	return db, nil
 }
 
-// Save last deployed revision and hash
-func saveLastDeployedRevision(db *sql.DB, stackName string, version *version) error {
-
+// Save last deployed stackMetadata
+func saveLastDeployedRevision(db *sql.DB, stackName string, stackMetadata *stackMetadata) error {
 	_, err := db.Exec(`
-		INSERT INTO revisions (stack, revision, hash) 
-		VALUES (?, ?, ?) 
+		INSERT INTO revisions (stack, repo_revision, deployed_stack_revision, hash, deployed_at) 
+		VALUES (?, ?, ?, ?, ?) 
 		ON CONFLICT(stack) DO UPDATE SET 
-			revision = excluded.revision, 
-			hash = excluded.hash
-	`, stackName, version.revision, version.hash)
+			repo_revision = excluded.repo_revision, 
+			deployed_stack_revision = excluded.deployed_stack_revision, 
+			hash = excluded.hash,
+			deployed_at = excluded.deployed_at
+	`, stackName, stackMetadata.repoRevision, stackMetadata.deployedStackRevision, stackMetadata.hash, stackMetadata.deployedAt)
 
 	if err != nil {
 		return fmt.Errorf("failed to save revision: %w", err)
@@ -75,18 +85,29 @@ func saveLastDeployedRevision(db *sql.DB, stackName string, version *version) er
 	return nil
 }
 
-// Load a stack's revision and hash
-func loadLastDeployedRevision(db *sql.DB, stackName string) (version *version, err error) {
-	var revision, hash string
-	err = db.QueryRow(`SELECT revision, hash FROM revisions WHERE stack = ?`, stackName).Scan(&revision, &hash)
+// Load a stack's stackMetadata
+func loadLastDeployedRevision(db *sql.DB, stackName string) (*stackMetadata, error) {
+	var repoRevision, deployedStackRevision, hash string
+	var deployedAt time.Time
+
+	err := db.QueryRow(`
+		SELECT repo_revision, deployed_stack_revision, hash, deployed_at 
+		FROM revisions 
+		WHERE stack = ?`, stackName).Scan(&repoRevision, &deployedStackRevision, &hash, &deployedAt)
+
 	if err == sql.ErrNoRows {
-		return newVersion("", ""), nil
+		return newVersion("", "", "", time.Now()), nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to query revision: %w", err)
 	}
 
-	return newVersion(revision, hash), nil
+	return &stackMetadata{
+		repoRevision:          repoRevision,
+		deployedStackRevision: deployedStackRevision,
+		hash:                  hash,
+		deployedAt:            deployedAt,
+	}, nil
 }
 
 // Compute a SHA-256 hash of the stack content
