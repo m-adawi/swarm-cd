@@ -27,6 +27,10 @@ func newVersionFromData(revision string, data []byte) *version {
 	}
 }
 
+func (version *version) fmtHash() string {
+	return fmtHash(version.hash)
+}
+
 func getDBFilePath() string {
 	if path := os.Getenv("SWARMCD_DB"); path != "" {
 		return path
@@ -89,4 +93,11 @@ func loadLastDeployedRevision(db *sql.DB, stackName string) (version *version, e
 func computeHash(data []byte) string {
 	hash := sha256.Sum256(data)
 	return fmt.Sprintf("%x", hash)
+}
+
+func fmtHash(hash string) string {
+	if len(hash) >= 8 {
+		return hash[:8]
+	}
+	return "<empty-hash>"
 }

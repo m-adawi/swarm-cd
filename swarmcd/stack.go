@@ -277,14 +277,14 @@ func (swarmStack *swarmStack) writeStack(composeMap map[string]any) ([]byte, err
 }
 
 func (swarmStack *swarmStack) shouldDeploy(newVersion *version, deployedVersion *version) bool {
-	logger.Debug(fmt.Sprintf("%s Old Stack hash: %s", swarmStack.name, fmtHash(deployedVersion.hash)))
-	logger.Debug(fmt.Sprintf("%s New Stack hash: %s", swarmStack.name, fmtHash(newVersion.hash)))
+	logger.Debug(fmt.Sprintf("%s Old Stack hash: %s", swarmStack.name, deployedVersion.fmtHash()))
+	logger.Debug(fmt.Sprintf("%s New Stack hash: %s", swarmStack.name, newVersion.fmtHash()))
 	if newVersion.hash == deployedVersion.hash {
-		logger.Info(fmt.Sprintf("%s stack file hash unchanged, hash=%s. Will skip deployment of revision: %s", swarmStack.name, fmtHash(deployedVersion.hash), fmtHash(newVersion.hash)))
+		logger.Info(fmt.Sprintf("%s stack file hash unchanged, hash=%s. Will skip deployment of revision: %s", swarmStack.name, deployedVersion.fmtHash()), newVersion.revision)
 		logger.Info(fmt.Sprintf("%s stack remains at revision: %s", swarmStack.name, deployedVersion.hash))
 		return false
 	}
-	logger.Info(fmt.Sprintf("%s new stack file with hash=%s found. Will continue with deployment of revision: %s", swarmStack.name, fmtHash(newVersion.hash), newVersion.hash))
+	logger.Info(fmt.Sprintf("%s new stack file with hash=%s found. Will continue with deployment of revision: %s", swarmStack.name, newVersion.fmtHash(), newVersion.revision))
 	return true
 }
 
@@ -304,11 +304,4 @@ func (swarmStack *swarmStack) deployStack() error {
 		return fmt.Errorf("could not deploy stack %s: %s", swarmStack.name, err)
 	}
 	return nil
-}
-
-func fmtHash(hash string) string {
-	if len(hash) >= 8 {
-		return hash[:8]
-	}
-	return "<empty-hash>"
 }
