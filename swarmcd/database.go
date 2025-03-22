@@ -16,7 +16,7 @@ type stackMetadata struct {
 	hash                  string
 }
 
-func newVersion(repoRevision string, stackRevision string, hash string, time time.Time) *stackMetadata {
+func newStackMetadata(repoRevision string, stackRevision string, hash string, time time.Time) *stackMetadata {
 	return &stackMetadata{
 		repoRevision:          repoRevision,
 		deployedStackRevision: stackRevision,
@@ -25,17 +25,17 @@ func newVersion(repoRevision string, stackRevision string, hash string, time tim
 	}
 }
 
-func newVersionFromData(repoRevision string, stackRevision string, data []byte) *stackMetadata {
+func newStackMetadataFromStackData(repoRevision string, stackRevision string, stackData []byte) *stackMetadata {
 	return &stackMetadata{
 		repoRevision:          repoRevision,
 		deployedStackRevision: stackRevision,
-		hash:                  computeHash(data),
+		hash:                  computeHash(stackData),
 		deployedAt:            time.Now(),
 	}
 }
 
-func (version *stackMetadata) fmtHash() string {
-	return fmtHash(version.hash)
+func (stackMetadata *stackMetadata) fmtHash() string {
+	return fmtHash(stackMetadata.hash)
 }
 
 func getDBFilePath() string {
@@ -96,7 +96,7 @@ func loadLastDeployedRevision(db *sql.DB, stackName string) (*stackMetadata, err
 		WHERE stack = ?`, stackName).Scan(&repoRevision, &deployedStackRevision, &hash, &deployedAt)
 
 	if err == sql.ErrNoRows {
-		return newVersion("", "", "", time.Now()), nil
+		return newStackMetadata("", "", "", time.Now()), nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to query revision: %w", err)

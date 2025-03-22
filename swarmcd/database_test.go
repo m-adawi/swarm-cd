@@ -22,7 +22,7 @@ func TestSaveAndLoadLastDeployedRevision(t *testing.T) {
 	stackRevision := "12345678"
 	stackContent := []byte("test content")
 
-	version := newVersionFromData(repoRevision, stackRevision, stackContent)
+	version := newStackMetadataFromStackData(repoRevision, stackRevision, stackContent)
 	now := time.Now()
 	version.deployedAt = now
 

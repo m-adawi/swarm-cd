@@ -108,7 +108,7 @@ func (swarmStack *swarmStack) updateStack() (stackMetadata *stackMetadata, err e
 		return nil, fmt.Errorf("failed to write stack to file for %s stack: %w", swarmStack.name, err)
 	}
 
-	updatedVersion := newVersionFromData(revision, revision, writtenBytes)
+	updatedVersion := newStackMetadataFromStackData(revision, revision, writtenBytes)
 
 	if swarmStack.shouldDeploy(updatedVersion, deployedVersion) {
 		log.Debug("deploying stack...")
