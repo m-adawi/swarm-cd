@@ -45,8 +45,35 @@ func getDBFilePath() string {
 	return "/data/revisions.db" // Default path
 }
 
+type stackDB struct {
+	db        *sql.DB
+	stackName string
+}
+
 // Ensure database and table exist
-func initDB(dbFile string) (*sql.DB, error) {
+func initStackDB(dbFile string, stackName string) (*stackDB, error) {
+	db, err := initSqlDB(dbFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return &stackDB{db: db, stackName: stackName}, nil
+}
+
+func (stackDb *stackDB) saveLastDeployedMetadata(stackMetadata *stackMetadata) error {
+	return saveLastDeployedMetadata(stackDb.db, stackDb.stackName, stackMetadata)
+}
+
+func (stackDb *stackDB) loadLastDeployedMetadata() (*stackMetadata, error) {
+	return loadLastDeployedMetadata(stackDb.db, stackDb.stackName)
+}
+
+func (stackDb *stackDB) close() error {
+	return stackDb.db.Close()
+}
+
+// Ensure database and table exist
+func initSqlDB(dbFile string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite", dbFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)

@@ -49,15 +49,15 @@ func (swarmStack *swarmStack) updateStack() (stackMetadata *stackMetadata, err e
 	}
 	log.Debug("changes pulled", "revision", revision)
 
-	db, err := initDB(getDBFilePath())
+	stackDb, err := initStackDB(getDBFilePath(), swarmStack.name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %s", err)
 	}
-	defer db.Close()
+	defer stackDb.close()
 
-	deployedVersion, err := loadLastDeployedMetadata(db, swarmStack.name)
+	deployedVersion, err := stackDb.loadLastDeployedMetadata()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read revision from db for %s stack: %w", swarmStack.name, err)
+		return nil, fmt.Errorf("failed to read revision from stackDb for %s stack: %w", swarmStack.name, err)
 	}
 
 	if deployedVersion.repoRevision == revision {
@@ -117,19 +117,19 @@ func (swarmStack *swarmStack) updateStack() (stackMetadata *stackMetadata, err e
 			return nil, fmt.Errorf("failed to deploy stack for  %s stack: %w", swarmStack.name, err)
 		}
 
-		log.Debug("saving current stack's metadata to db...")
-		err = saveLastDeployedMetadata(db, swarmStack.name, updatedVersion)
+		log.Debug("saving current stack's metadata to stackDb...")
+		err = stackDb.saveLastDeployedMetadata(updatedVersion)
 		if err != nil {
-			return nil, fmt.Errorf("failed to save new stackMetadata to db for  %s stack: %w", swarmStack.name, err)
+			return nil, fmt.Errorf("failed to save new stackMetadata to stackDb for  %s stack: %w", swarmStack.name, err)
 		}
 
 		return updatedVersion, nil
 	} else {
-		log.Debug("updating deployedVersion.repoRevision in db...")
+		log.Debug("updating deployedVersion.repoRevision in stackDb...")
 		deployedVersion.repoRevision = revision
-		err = saveLastDeployedMetadata(db, swarmStack.name, deployedVersion)
+		err = stackDb.saveLastDeployedMetadata(deployedVersion)
 		if err != nil {
-			return nil, fmt.Errorf("failed to update stackMetadata in db for  %s stack: %w", swarmStack.name, err)
+			return nil, fmt.Errorf("failed to update stackMetadata in stackDb for  %s stack: %w", swarmStack.name, err)
 		}
 
 		return deployedVersion, nil
