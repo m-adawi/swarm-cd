@@ -110,14 +110,12 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 
 	updatedVersion := newVersionFromData(revision, writtenBytes)
 
-	if !swarmStack.shouldDeploy(updatedVersion, deployedVersion) {
-		return deployedVersion.revision, nil
-	}
-
-	log.Debug("deploying stack...")
-	err = swarmStack.deployStack()
-	if err != nil {
-		return revision, fmt.Errorf("failed to deploy stack for  %s stack: %w", swarmStack.name, err)
+	if swarmStack.shouldDeploy(updatedVersion, deployedVersion) {
+		log.Debug("deploying stack...")
+		err = swarmStack.deployStack()
+		if err != nil {
+			return revision, fmt.Errorf("failed to deploy stack for  %s stack: %w", swarmStack.name, err)
+		}
 	}
 
 	log.Debug("saving current revision to db...")
