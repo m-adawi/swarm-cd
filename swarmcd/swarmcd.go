@@ -16,8 +16,7 @@ func Run() {
 		var waitGroup sync.WaitGroup
 		logger.Info("updating stacks...")
 		for _, swarmStack := range stacks {
-			logger.Info("Starting go routine for %v", swarmStack.name)
-
+			logger.Debug(fmt.Sprintf("Starting go routine for %v", swarmStack.name))
 			waitGroup.Add(1)
 			go updateStackThread(swarmStack, &waitGroup)
 		}
@@ -34,6 +33,7 @@ func updateStackConfigs() {
 	err := util.LoadConfigs()
 	if err != nil {
 		logger.Info("Error calling loadConfig again: %v", err)
+		return
 	}
 
 	err = initRepos()

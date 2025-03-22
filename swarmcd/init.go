@@ -112,6 +112,8 @@ func initStacks() error {
 	var newStackStatus = map[string]*StackStatus{}
 
 	for stack, stackConfig := range config.StackConfigs {
+		logger.Info(fmt.Sprintf("Initializing Stack %v", stack))
+
 		stackRepo, ok := repos[stackConfig.Repo]
 		if !ok {
 			return fmt.Errorf("error initializing %s stack, no such repo: %s", stack, stackConfig.Repo)
