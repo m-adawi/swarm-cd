@@ -18,7 +18,10 @@ func init() {
 
 func main() {
 	go swarmcd.Run()
-	web.RunServer()
+	if err := web.RunServer(util.Configs.Address); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 
 func handleInitError(err error) {
