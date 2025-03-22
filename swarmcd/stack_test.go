@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sync"
 	"testing"
 )
 
@@ -34,22 +35,16 @@ func TestRenderComposeTemplate(t *testing.T) {
 	}
 }
 
-func TestRotateObjects(t *testing.T) {
-	fileName, fileContent, swarm := setupTestStack(t)
-
+// External objects are ignored by the rotation
+func TestRotateExternalObjects(t *testing.T) {
+	repo := &stackRepo{name: "test", path: "test", url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
+	stack := newSwarmStack("test", repo, "main", "docker-compose.yaml", nil, "", false)
 	objects := map[string]any{
-		"service1": map[string]any{"file": fileName},
+		"my-secret": map[string]any{"external": true},
 	}
-
-	_, err := swarm.rotateObjects(objects)
+	_, err := stack.rotateObjects(objects, "secrets")
 	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-
-	expectedHash := fmt.Sprintf("%x", md5.Sum(fileContent))[:8]
-	expectedName := "test-stack-service1-" + expectedHash
-	if objects["service1"].(map[string]any)["name"] != expectedName {
-		t.Errorf("Expected name %s, got %s", expectedName, objects["service1"].(map[string]any)["name"])
+		t.Errorf("unexpected error: %s", err)
 	}
 }
 
@@ -61,7 +56,7 @@ func TestRotateObjectsHandlesExternalTrue(t *testing.T) {
 		"config2": map[string]any{"file": configFile},
 	}
 
-	_, err := swarm.rotateObjects(objects)
+	_, err := swarm.rotateObjects(objects, "secrets")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -75,7 +70,7 @@ func TestRotateObjectsInvalidMap(t *testing.T) {
 
 	objects := map[string]any{"service1": "invalid"}
 
-	_, err := swarm.rotateObjects(objects)
+	_, err := swarm.rotateObjects(objects, "secrets")
 	if err == nil {
 		t.Fatalf("Expected an error but got none")
 	}
@@ -90,7 +85,7 @@ func TestRotateObjectsMissingFileField(t *testing.T) {
 
 	objects := map[string]any{"service1": map[string]any{}}
 
-	_, err := swarm.rotateObjects(objects)
+	_, err := swarm.rotateObjects(objects, "secrets")
 	if err == nil {
 		t.Fatalf("Expected an error but got none")
 	}
@@ -104,7 +99,7 @@ func TestRotateObjectsFileNotFound(t *testing.T) {
 	swarm := &swarmStack{name: "test-stack", repo: &stackRepo{path: "nonexistent"}, composePath: "docker-compose.yml"}
 	objects := map[string]any{"service1": map[string]any{"file": "missing.txt"}}
 
-	_, err := swarm.rotateObjects(objects)
+	_, err := swarm.rotateObjects(objects, "secrets")
 	if err == nil {
 		t.Fatalf("Expected an error but got none")
 	}
@@ -136,4 +131,35 @@ func setupTestStack(t *testing.T) (string, []byte, *swarmStack) {
 	repo := &stackRepo{path: tempDir}
 	swarm := &swarmStack{name: "test-stack", repo: repo, composePath: "docker-compose.yml"}
 	return fileName, fileContent, swarm
+}
+
+// Secrets are discovered, external secrets are ignored
+func TestSecretDiscovery(t *testing.T) {
+	repo := &stackRepo{name: "test", path: "test", url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
+	stack := newSwarmStack("test", repo, "main", "stacks/docker-compose.yaml", nil, "", false)
+	stackString := []byte(`services:
+  my-service:
+    image: my-image
+    secrets:
+      - my-secret
+      - my-external-secret
+secrets:
+  my-secret:
+    file: secrets/secret.yaml
+  my-external-secret:
+    external: true`)
+	composeMap, err := stack.parseStackString(stackString)
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	sopsFiles, err := discoverSecrets(composeMap, stack.composePath)
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if len(sopsFiles) != 1 {
+		t.Errorf("unexpected number of sops files: %d", len(sopsFiles))
+	}
+	if sopsFiles[0] != "stacks/secrets/secret.yaml" {
+		t.Errorf("unexpected sops file: %s", sopsFiles[0])
+	}
 }

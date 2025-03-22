@@ -150,7 +150,7 @@ func (swarmStack *swarmStack) readStack() ([]byte, error) {
 }
 
 func (swarmStack *swarmStack) renderComposeTemplate(templateContents []byte) ([]byte, error) {
-	valuesFile := path.Join(config.ReposPath, swarmStack.repo.path, swarmStack.valuesFile)
+	valuesFile := path.Join(swarmStack.repo.path, swarmStack.valuesFile)
 	valuesBytes, err := os.ReadFile(valuesFile)
 	if err != nil {
 		return nil, fmt.Errorf("could not read %s stack values file: %w", swarmStack.name, err)
@@ -188,7 +188,12 @@ func (swarmStack *swarmStack) decryptSopsFiles(composeMap map[string]any) (err e
 			return
 		}
 	}
+	log := logger.With(
+		slog.String("stack", swarmStack.name),
+		slog.String("branch", swarmStack.branch),
+	)
 	for _, sopsFile := range sopsFiles {
+		log.Debug("decrypting secret...", "secret", sopsFile)
 		err = util.DecryptFile(path.Join(swarmStack.repo.path, sopsFile))
 		if err != nil {
 			return
@@ -205,12 +210,16 @@ func discoverSecrets(composeMap map[string]any, composePath string) ([]string, e
 			if !ok {
 				return nil, fmt.Errorf("invalid compose file: %s secret must be a map", secretName)
 			}
+			isExternal, ok := secretMap["external"].(bool)
+			if ok && isExternal {
+				continue
+			}
 			secretFile, ok := secretMap["file"].(string)
 			if !ok {
 				return nil, fmt.Errorf("invalid compose file: %s file field must be a string", secretName)
 			}
-			objectDir := path.Join(path.Dir(composePath), secretFile)
-			sopsFiles = append(sopsFiles, objectDir)
+			secretPath := path.Join(path.Dir(composePath), secretFile)
+			sopsFiles = append(sopsFiles, secretPath)
 		}
 	}
 	return sopsFiles, nil
@@ -219,7 +228,7 @@ func discoverSecrets(composeMap map[string]any, composePath string) ([]string, e
 func (swarmStack *swarmStack) rotateConfigsAndSecrets(composeMap map[string]any) ([]byte, error) {
 	var dataBytes []byte
 	if configs, ok := composeMap["configs"].(map[string]any); ok {
-		configBytes, err := swarmStack.rotateObjects(configs)
+		configBytes, err := swarmStack.rotateObjects(configs, "configs")
 		dataBytes = append(dataBytes, configBytes...)
 
 		if err != nil {
@@ -227,7 +236,7 @@ func (swarmStack *swarmStack) rotateConfigsAndSecrets(composeMap map[string]any)
 		}
 	}
 	if secrets, ok := composeMap["secrets"].(map[string]any); ok {
-		secretsByte, err := swarmStack.rotateObjects(secrets)
+		secretsByte, err := swarmStack.rotateObjects(secrets, "secrets")
 		dataBytes = append(dataBytes, secretsByte...)
 		if err != nil {
 			return nil, fmt.Errorf("could not rotate one or more secret files of stack %s: %w", swarmStack.name, err)
@@ -236,10 +245,15 @@ func (swarmStack *swarmStack) rotateConfigsAndSecrets(composeMap map[string]any)
 	return dataBytes, nil
 }
 
-func (swarmStack *swarmStack) rotateObjects(objects map[string]any) ([]byte, error) {
+func (swarmStack *swarmStack) rotateObjects(objects map[string]any, objectType string) ([]byte, error) {
 	objectsDir := path.Dir(path.Join(swarmStack.repo.path, swarmStack.composePath))
 	var configBytes []byte
 	for objectName, object := range objects {
+		log := logger.With(
+			slog.String("stack", swarmStack.name),
+			slog.String("branch", swarmStack.branch),
+			slog.String(objectType, objectName),
+		)
 		objectMap, ok := object.(map[string]any)
 		if !ok {
 			return nil, fmt.Errorf("invalid compose file: %s object must be a map", objectName)
@@ -248,18 +262,26 @@ func (swarmStack *swarmStack) rotateObjects(objects map[string]any) ([]byte, err
 		if external, exists := objectMap["external"].(bool); exists && external {
 			continue
 		}
+		isExternal, ok := objectMap["external"].(bool)
+		if ok && isExternal {
+			continue
+		}
 		objectFile, ok := objectMap["file"].(string)
 		if !ok {
 			return nil, fmt.Errorf("invalid compose file: %s file field must be a string", objectName)
 		}
+		log.Debug("reading...", "file", objectFile)
 		objectFilePath := path.Join(objectsDir, objectFile)
 		configFileBytes, err := os.ReadFile(objectFilePath)
 		configBytes = append(configBytes, configFileBytes...)
 		if err != nil {
 			return nil, fmt.Errorf("could not read file %s for rotation: %w", objectFilePath, err)
 		}
+		log.Debug("computing hash...", "file", objectFile)
 		hash := fmt.Sprintf("%x", md5.Sum(configFileBytes))[:8]
-		objectMap["name"] = swarmStack.name + "-" + objectName + "-" + hash
+		newObjectName := swarmStack.name + "-" + objectName + "-" + hash
+		log.Debug("renaming...", "new_name", newObjectName)
+		objectMap["name"] = newObjectName
 	}
 	return configBytes, nil
 }

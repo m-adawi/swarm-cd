@@ -18,6 +18,7 @@ COPY util/ util/
 COPY web/ web/
 COPY swarmcd/ swarmcd/
 RUN CGO_ENABLED=0 GOOS=linux go build -o /swarm-cd ./cmd/
+RUN go test ./swarmcd/
 
 # Stage 3: Final production image (depends on previous stages)
 FROM alpine:3.2
@@ -27,6 +28,8 @@ RUN apk add --no-cache ca-certificates && update-ca-certificates
 COPY --from=backend-build /swarm-cd /app/
 # Copy the built frontend from the frontend build stage
 COPY --from=frontend-build /ui/dist/ /app/ui/dist/
+# Sets the web server mode to release
+ENV GIN_MODE=release
 
 EXPOSE 8080
 # Set the entry point for the application
