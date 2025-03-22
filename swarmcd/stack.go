@@ -280,7 +280,7 @@ func (swarmStack *swarmStack) shouldDeploy(newVersion *version, deployedVersion 
 	logger.Debug(fmt.Sprintf("%s Old Stack hash: %s", swarmStack.name, deployedVersion.fmtHash()))
 	logger.Debug(fmt.Sprintf("%s New Stack hash: %s", swarmStack.name, newVersion.fmtHash()))
 	if newVersion.hash == deployedVersion.hash {
-		logger.Info(fmt.Sprintf("%s stack file hash unchanged, hash=%s. Will skip deployment of revision: %s", swarmStack.name, deployedVersion.fmtHash()), newVersion.revision)
+		logger.Info(fmt.Sprintf("%s stack file hash unchanged, hash=%s. Will skip deployment of revision: %s", swarmStack.name, deployedVersion.fmtHash(), newVersion.revision))
 		logger.Info(fmt.Sprintf("%s stack remains at revision: %s", swarmStack.name, deployedVersion.hash))
 		return false
 	}
