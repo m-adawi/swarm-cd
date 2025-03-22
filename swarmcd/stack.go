@@ -62,7 +62,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 
 	if lastRevision == "" {
-		logger.Info(fmt.Sprintf("%s no last revision revision found", swarmStack.name))
+		logger.Info(fmt.Sprintf("%s no last revision found", swarmStack.name))
 	}
 
 	if lastRevision == revision {
