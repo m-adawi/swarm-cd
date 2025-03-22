@@ -2,12 +2,13 @@ package swarmcd
 
 import (
 	"fmt"
+	"github.com/m-adawi/swarm-cd/util"
 	"sync"
 	"time"
 )
 
-var stackStatus map[string]*StackStatus = map[string]*StackStatus{}
-var stacks []*swarmStack
+var stackStatus = map[string]*StackStatus{}
+var stacks = map[string]*swarmStack{}
 
 func Run() {
 	logger.Info("starting SwarmCD")
@@ -15,12 +16,34 @@ func Run() {
 		var waitGroup sync.WaitGroup
 		logger.Info("updating stacks...")
 		for _, swarmStack := range stacks {
+			logger.Info("Starting go routine for %v", swarmStack.name)
+
 			waitGroup.Add(1)
 			go updateStackThread(swarmStack, &waitGroup)
 		}
 		waitGroup.Wait()
 		logger.Info("waiting for the update interval")
 		time.Sleep(time.Duration(config.UpdateInterval) * time.Second)
+
+		logger.Info("check if new repos or new stacks are available")
+		updateStackConfigs()
+	}
+}
+
+func updateStackConfigs() {
+	err := util.LoadConfigs()
+	if err != nil {
+		logger.Info("Error calling loadConfig again: %v", err)
+	}
+
+	err = initRepos()
+	if err != nil {
+		logger.Info("Error calling initRepos again: %v", err)
+	}
+
+	err = initStacks()
+	if err != nil {
+		logger.Info("Error calling initStacks again: %v", err)
 	}
 }
 
