@@ -281,10 +281,9 @@ func (swarmStack *swarmStack) shouldDeploy(writtenBytes []byte, deployedStackHas
 		logger.Info(fmt.Sprintf("%s stack file hash unchanged, hash=%s. Will skip deployment of revision: %s", swarmStack.name, fmtHash(deployedStackHash), revision))
 		logger.Info(fmt.Sprintf("%s stack remains at revision: %s", swarmStack.name, lastRevision))
 		return false
-	} else {
-		logger.Info(fmt.Sprintf("%s new stack file with hash=%s found. Will continue with deployment of revision: %s", swarmStack.name, fmtHash(newStackHash), revision))
-		return true
 	}
+	logger.Info(fmt.Sprintf("%s new stack file with hash=%s found. Will continue with deployment of revision: %s", swarmStack.name, fmtHash(newStackHash), revision))
+	return true
 }
 
 func (swarmStack *swarmStack) deployStack() error {
