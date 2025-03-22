@@ -80,7 +80,7 @@ func loadLastDeployedRevision(db *sql.DB, stackName string) (version *version, e
 	var revision, hash string
 	err = db.QueryRow(`SELECT revision, hash FROM revisions WHERE stack = ?`, stackName).Scan(&revision, &hash)
 	if err == sql.ErrNoRows {
-		return nil, nil
+		return newVersion("", ""), nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to query revision: %w", err)
