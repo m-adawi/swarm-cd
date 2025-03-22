@@ -45,7 +45,7 @@ func (swarmStack *swarmStack) updateStack() (stackMetadata *stackMetadata, err e
 	log.Debug("pulling changes...")
 	revision, err := swarmStack.repo.pullChanges(swarmStack.branch)
 	if err != nil {
-		return
+		return nil, err
 	}
 	log.Debug("changes pulled", "revision", revision)
 
@@ -119,17 +119,21 @@ func (swarmStack *swarmStack) updateStack() (stackMetadata *stackMetadata, err e
 
 		log.Debug("saving current stack's metadata to db...")
 		err = saveLastDeployedRevision(db, swarmStack.name, updatedVersion)
+		if err != nil {
+			return nil, fmt.Errorf("failed to save new stackMetadata to db for  %s stack: %w", swarmStack.name, err)
+		}
+
+		return updatedVersion, nil
 	} else {
-		log.Debug("updating stacks.repoRevision in db...")
+		log.Debug("updating deployedVersion.repoRevision in db...")
 		deployedVersion.repoRevision = revision
 		err = saveLastDeployedRevision(db, swarmStack.name, deployedVersion)
-	}
+		if err != nil {
+			return nil, fmt.Errorf("failed to update stackMetadata in db for  %s stack: %w", swarmStack.name, err)
+		}
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to save revision to db for  %s stack: %w", swarmStack.name, err)
+		return deployedVersion, nil
 	}
-
-	return
 }
 
 func (swarmStack *swarmStack) readStack() ([]byte, error) {
