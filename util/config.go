@@ -40,17 +40,15 @@ func LoadConfigs() (err error) {
 	if err != nil {
 		return fmt.Errorf("could not read configuration file: %w", err)
 	}
-	if Configs.RepoConfigs == nil {
-		err = readRepoConfigs()
-		if err != nil {
-			return fmt.Errorf("could not read repos file: %w", err)
-		}
+
+	err = readRepoConfigs()
+	if err != nil {
+		return fmt.Errorf("could not read repos file: %w", err)
 	}
-	if Configs.StackConfigs == nil {
-		err = readStackConfigs()
-		if err != nil {
-			return fmt.Errorf("could not load stacks file: %w", err)
-		}
+
+	err = readStackConfigs()
+	if err != nil {
+		return fmt.Errorf("could not load stacks file: %w", err)
 	}
 	return
 }
