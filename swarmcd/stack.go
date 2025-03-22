@@ -222,7 +222,6 @@ func discoverSecrets(composeMap map[string]any, composePath string) ([]string, e
 func (swarmStack *swarmStack) rotateConfigsAndSecrets(composeMap map[string]any) error {
 	if configs, ok := composeMap["configs"].(map[string]any); ok {
 		err := swarmStack.rotateObjects(configs, "configs")
-
 		if err != nil {
 			return fmt.Errorf("could not rotate one or more config files of stack %s: %w", swarmStack.name, err)
 		}
@@ -247,10 +246,6 @@ func (swarmStack *swarmStack) rotateObjects(objects map[string]any, objectType s
 		objectMap, ok := object.(map[string]any)
 		if !ok {
 			return fmt.Errorf("invalid compose file: %s object must be a map", objectName)
-		}
-		// If "external" field exists and is true, skip processing
-		if external, exists := objectMap["external"].(bool); exists && external {
-			continue
 		}
 		isExternal, ok := objectMap["external"].(bool)
 		if ok && isExternal {
