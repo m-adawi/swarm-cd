@@ -109,7 +109,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	}
 
 	if !swarmStack.shouldDeploy(writtenBytes, deployedStackHash, revision, lastRevision) {
-		return revision, nil
+		return lastRevision, nil
 	}
 
 	log.Debug("deploying stack...")
