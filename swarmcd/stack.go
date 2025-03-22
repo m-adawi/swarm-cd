@@ -108,15 +108,8 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		return "", fmt.Errorf("failed to write stack to file for %s stack: %w", swarmStack.name, err)
 	}
 
-	newStackHash := computeHash(writtenBytes)
-	logger.Debug(fmt.Sprintf("%s Old Stack hash: %s", swarmStack.name, fmtHash(deployedStackHash)))
-	logger.Debug(fmt.Sprintf("%s New Stack hash: %s", swarmStack.name, fmtHash(newStackHash)))
-	if newStackHash == deployedStackHash {
-		logger.Info(fmt.Sprintf("%s stack file hash unchanged, hash=%s. Will skip deployment of revision: %s", swarmStack.name, fmtHash(deployedStackHash), revision))
-		logger.Info(fmt.Sprintf("%s stack remains at revision: %s", swarmStack.name, lastRevision))
+	if !swarmStack.shouldDeploy(writtenBytes, deployedStackHash, revision, lastRevision) {
 		return revision, nil
-	} else {
-		logger.Info(fmt.Sprintf("%s new stack file with hash=%s found. Will continue with deployment of revision: %s", swarmStack.name, fmtHash(newStackHash), revision))
 	}
 
 	log.Debug("deploying stack...")
@@ -279,6 +272,20 @@ func (swarmStack *swarmStack) writeStack(composeMap map[string]any) ([]byte, err
 	fileInfo, _ := os.Stat(composeFile)
 	os.WriteFile(composeFile, composeFileBytes, fileInfo.Mode())
 	return composeFileBytes, nil
+}
+
+func (swarmStack *swarmStack) shouldDeploy(writtenBytes []byte, deployedStackHash string, revision string, lastRevision string) bool {
+	newStackHash := computeHash(writtenBytes)
+	logger.Debug(fmt.Sprintf("%s Old Stack hash: %s", swarmStack.name, fmtHash(deployedStackHash)))
+	logger.Debug(fmt.Sprintf("%s New Stack hash: %s", swarmStack.name, fmtHash(newStackHash)))
+	if newStackHash == deployedStackHash {
+		logger.Info(fmt.Sprintf("%s stack file hash unchanged, hash=%s. Will skip deployment of revision: %s", swarmStack.name, fmtHash(deployedStackHash), revision))
+		logger.Info(fmt.Sprintf("%s stack remains at revision: %s", swarmStack.name, lastRevision))
+		return false
+	} else {
+		logger.Info(fmt.Sprintf("%s new stack file with hash=%s found. Will continue with deployment of revision: %s", swarmStack.name, fmtHash(newStackHash), revision))
+		return true
+	}
 }
 
 func (swarmStack *swarmStack) deployStack() error {
