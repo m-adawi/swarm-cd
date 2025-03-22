@@ -27,8 +27,10 @@ RUN apk add --no-cache ca-certificates && update-ca-certificates
 # Copy the built backend binary from the backend build stage
 COPY --from=backend-build /swarm-cd /app/
 # Copy the built frontend from the frontend build stage
-COPY --from=frontend-build /ui/dist/ /app/ui/
+COPY --from=frontend-build /ui/dist/ /app/ui/dist/
 # Sets the web server mode to release
 ENV GIN_MODE=release
+
+EXPOSE 8080
 # Set the entry point for the application
 CMD ["/app/swarm-cd"]

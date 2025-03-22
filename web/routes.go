@@ -19,5 +19,5 @@ func init() {
 }
 
 func RunServer() {
-	router.Run("localhost:8080")
+	router.Run(":8080")
 }
