@@ -67,7 +67,7 @@ func initDB(dbFile string) (*sql.DB, error) {
 }
 
 // Save last deployed stackMetadata
-func saveLastDeployedRevision(db *sql.DB, stackName string, stackMetadata *stackMetadata) error {
+func saveLastDeployedMetadata(db *sql.DB, stackName string, stackMetadata *stackMetadata) error {
 	_, err := db.Exec(`
 		INSERT INTO revisions (stack, repo_revision, deployed_stack_revision, hash, deployed_at) 
 		VALUES (?, ?, ?, ?, ?) 
@@ -86,7 +86,7 @@ func saveLastDeployedRevision(db *sql.DB, stackName string, stackMetadata *stack
 }
 
 // Load a stack's stackMetadata
-func loadLastDeployedRevision(db *sql.DB, stackName string) (*stackMetadata, error) {
+func loadLastDeployedMetadata(db *sql.DB, stackName string) (*stackMetadata, error) {
 	var repoRevision, deployedStackRevision, hash string
 	var deployedAt time.Time
 

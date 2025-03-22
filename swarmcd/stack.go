@@ -55,7 +55,7 @@ func (swarmStack *swarmStack) updateStack() (stackMetadata *stackMetadata, err e
 	}
 	defer db.Close()
 
-	deployedVersion, err := loadLastDeployedRevision(db, swarmStack.name)
+	deployedVersion, err := loadLastDeployedMetadata(db, swarmStack.name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read revision from db for %s stack: %w", swarmStack.name, err)
 	}
@@ -118,7 +118,7 @@ func (swarmStack *swarmStack) updateStack() (stackMetadata *stackMetadata, err e
 		}
 
 		log.Debug("saving current stack's metadata to db...")
-		err = saveLastDeployedRevision(db, swarmStack.name, updatedVersion)
+		err = saveLastDeployedMetadata(db, swarmStack.name, updatedVersion)
 		if err != nil {
 			return nil, fmt.Errorf("failed to save new stackMetadata to db for  %s stack: %w", swarmStack.name, err)
 		}
@@ -127,7 +127,7 @@ func (swarmStack *swarmStack) updateStack() (stackMetadata *stackMetadata, err e
 	} else {
 		log.Debug("updating deployedVersion.repoRevision in db...")
 		deployedVersion.repoRevision = revision
-		err = saveLastDeployedRevision(db, swarmStack.name, deployedVersion)
+		err = saveLastDeployedMetadata(db, swarmStack.name, deployedVersion)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update stackMetadata in db for  %s stack: %w", swarmStack.name, err)
 		}

@@ -26,12 +26,12 @@ func TestSaveAndLoadLastDeployedRevision(t *testing.T) {
 	now := time.Now()
 	version.deployedAt = now
 
-	err = saveLastDeployedRevision(db, stackName, version)
+	err = saveLastDeployedMetadata(db, stackName, version)
 	if err != nil {
 		t.Fatalf("Failed to save repoRevision: %v", err)
 	}
 
-	loadedVersion, err := loadLastDeployedRevision(db, stackName)
+	loadedVersion, err := loadLastDeployedMetadata(db, stackName)
 	if err != nil {
 		t.Fatalf("Failed to load repoRevision: %v", err)
 	}
