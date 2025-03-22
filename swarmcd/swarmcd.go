@@ -11,7 +11,6 @@ var stacks []*swarmStack
 
 func Run() {
 	logger.Info("starting SwarmCD")
-
 	for {
 		var waitGroup sync.WaitGroup
 		logger.Info("updating stacks...")
