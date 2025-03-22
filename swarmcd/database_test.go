@@ -20,23 +20,24 @@ func TestSaveAndLoadLastDeployedRevision(t *testing.T) {
 	revision := "abcdefgh"
 	stackContent := []byte("test content")
 
-	err = saveLastDeployedRevision(db, stackName, revision, stackContent)
+	version := newVersionFromData(revision, stackContent)
+	err = saveLastDeployedRevision(db, stackName, version)
 	if err != nil {
 		t.Fatalf("Failed to save revision: %v", err)
 	}
 
-	loadedRevision, loadedHash, err := loadLastDeployedRevision(db, stackName)
+	loadedVersion, err := loadLastDeployedRevision(db, stackName)
 	if err != nil {
 		t.Fatalf("Failed to load revision: %v", err)
 	}
 
 	expectedHash := computeHash(stackContent)
 
-	if loadedRevision != revision {
-		t.Errorf("Expected revision %s, got %s", revision, loadedRevision)
+	if loadedVersion.revision != revision {
+		t.Errorf("Expected revision %s, got %s", revision, loadedVersion.revision)
 	}
 
-	if loadedHash != expectedHash {
-		t.Errorf("Expected hash %s, got %s", expectedHash, loadedHash)
+	if loadedVersion.hash != expectedHash {
+		t.Errorf("Expected hash %s, got %s", expectedHash, loadedVersion.hash)
 	}
 }

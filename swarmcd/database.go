@@ -8,6 +8,25 @@ import (
 	"os"
 )
 
+type version struct {
+	revision string
+	hash     string
+}
+
+func newVersion(revision string, hash string) *version {
+	return &version{
+		revision: revision,
+		hash:     hash,
+	}
+}
+
+func newVersionFromData(revision string, data []byte) *version {
+	return &version{
+		revision: revision,
+		hash:     computeHash(data),
+	}
+}
+
 func getDBFilePath() string {
 	if path := os.Getenv("SWARMCD_DB"); path != "" {
 		return path
@@ -35,8 +54,7 @@ func initDB(dbFile string) (*sql.DB, error) {
 }
 
 // Save last deployed revision and hash
-func saveLastDeployedRevision(db *sql.DB, stackName, revision string, stackContent []byte) error {
-	hash := computeHash(stackContent)
+func saveLastDeployedRevision(db *sql.DB, stackName string, version *version) error {
 
 	_, err := db.Exec(`
 		INSERT INTO revisions (stack, revision, hash) 
@@ -44,7 +62,7 @@ func saveLastDeployedRevision(db *sql.DB, stackName, revision string, stackConte
 		ON CONFLICT(stack) DO UPDATE SET 
 			revision = excluded.revision, 
 			hash = excluded.hash
-	`, stackName, revision, hash)
+	`, stackName, version.revision, version.hash)
 
 	if err != nil {
 		return fmt.Errorf("failed to save revision: %w", err)
@@ -54,16 +72,17 @@ func saveLastDeployedRevision(db *sql.DB, stackName, revision string, stackConte
 }
 
 // Load a stack's revision and hash
-func loadLastDeployedRevision(db *sql.DB, stackName string) (revision string, hash string, err error) {
+func loadLastDeployedRevision(db *sql.DB, stackName string) (version *version, err error) {
+	var revision, hash string
 	err = db.QueryRow(`SELECT revision, hash FROM revisions WHERE stack = ?`, stackName).Scan(&revision, &hash)
 	if err == sql.ErrNoRows {
-		return "", "", nil
-	} 
+		return nil, nil
+	}
 	if err != nil {
-		return "", "", fmt.Errorf("failed to query revision: %w", err)
+		return nil, fmt.Errorf("failed to query revision: %w", err)
 	}
 
-	return revision, hash, nil
+	return newVersion(revision, hash), nil
 }
 
 // Compute a SHA-256 hash of the stack content
