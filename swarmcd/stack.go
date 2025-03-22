@@ -51,8 +51,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 
 	db, err := initDB(getDBFilePath())
 	if err != nil {
-		logger.Error(fmt.Sprintf("failed to open database: %s", err))
-		return
+		return "", fmt.Errorf("failed to open database: %s", err)
 	}
 	defer db.Close()
 
