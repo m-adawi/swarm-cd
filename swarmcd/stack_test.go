@@ -33,8 +33,7 @@ func TestRenderComposeTemplate(t *testing.T) {
 	}
 }
 
-// External objects are ignored by the rotation
-func TestRotateObjectsHandlesExternalTrue(t *testing.T) {
+func TestRotateObjects(t *testing.T) {
 	configFile, _, swarm := setupTestStack(t)
 
 	objects := map[string]any{
@@ -46,6 +45,8 @@ func TestRotateObjectsHandlesExternalTrue(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
+
+	// External objects are ignored by the rotation
 	if _, exists := objects["config1"].(map[string]any)["name"]; exists {
 		t.Errorf("Expected config1 to be unmodified, but 'name' was set")
 	}
