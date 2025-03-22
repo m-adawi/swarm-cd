@@ -34,18 +34,6 @@ func TestRenderComposeTemplate(t *testing.T) {
 }
 
 // External objects are ignored by the rotation
-func TestRotateExternalObjects(t *testing.T) {
-	repo := &stackRepo{name: "test", path: "test", url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
-	stack := newSwarmStack("test", repo, "main", "docker-compose.yaml", nil, "", false)
-	objects := map[string]any{
-		"my-secret": map[string]any{"external": true},
-	}
-	err := stack.rotateObjects(objects, "secrets")
-	if err != nil {
-		t.Errorf("unexpected error: %s", err)
-	}
-}
-
 func TestRotateObjectsHandlesExternalTrue(t *testing.T) {
 	configFile, _, swarm := setupTestStack(t)
 
@@ -103,34 +91,6 @@ func TestRotateObjectsFileNotFound(t *testing.T) {
 	}
 }
 
-func setupSwarmStackWithValues(t *testing.T, values string) *swarmStack {
-	t.Helper()
-	tempDir := t.TempDir()
-	valuesFilePath := path.Join(tempDir, "values.yaml")
-	if err := os.WriteFile(valuesFilePath, []byte(values), 0644); err != nil {
-		t.Fatalf("Failed to write values file: %v", err)
-	}
-
-	return &swarmStack{
-		name:            "testStack",
-		repo:            &stackRepo{path: tempDir},
-		valuesFile:      "values.yaml",
-		discoverSecrets: false,
-	}
-}
-
-func setupTestStack(t *testing.T) (string, []byte, *swarmStack) {
-	tempDir := t.TempDir()
-	fileName := "testfile.txt"
-	filePath := path.Join(tempDir, fileName)
-	fileContent := []byte("test content")
-	os.WriteFile(filePath, fileContent, 0644)
-
-	repo := &stackRepo{path: tempDir}
-	swarm := &swarmStack{name: "test-stack", repo: repo, composePath: "docker-compose.yml"}
-	return fileName, fileContent, swarm
-}
-
 // Secrets are discovered, external secrets are ignored
 func TestSecretDiscovery(t *testing.T) {
 	repo := &stackRepo{name: "test", path: "test", url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
@@ -160,4 +120,32 @@ secrets:
 	if sopsFiles[0] != "stacks/secrets/secret.yaml" {
 		t.Errorf("unexpected sops file: %s", sopsFiles[0])
 	}
+}
+
+func setupSwarmStackWithValues(t *testing.T, values string) *swarmStack {
+	t.Helper()
+	tempDir := t.TempDir()
+	valuesFilePath := path.Join(tempDir, "values.yaml")
+	if err := os.WriteFile(valuesFilePath, []byte(values), 0644); err != nil {
+		t.Fatalf("Failed to write values file: %v", err)
+	}
+
+	return &swarmStack{
+		name:            "testStack",
+		repo:            &stackRepo{path: tempDir},
+		valuesFile:      "values.yaml",
+		discoverSecrets: false,
+	}
+}
+
+func setupTestStack(t *testing.T) (string, []byte, *swarmStack) {
+	tempDir := t.TempDir()
+	fileName := "testfile.txt"
+	filePath := path.Join(tempDir, fileName)
+	fileContent := []byte("test content")
+	os.WriteFile(filePath, fileContent, 0644)
+
+	repo := &stackRepo{path: tempDir}
+	swarm := &swarmStack{name: "test-stack", repo: repo, composePath: "docker-compose.yml"}
+	return fileName, fileContent, swarm
 }
