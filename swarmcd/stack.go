@@ -296,10 +296,7 @@ func (swarmStack *swarmStack) deployStack() error {
 func fmtHash(hash string) string {
 	var shortHash string
 	if len(hash) >= 8 {
-		shortHash = hash[:8]
-	} else {
-		shortHash = "<empty-hash>"
+		return hash[:8]
 	}
-
-	return shortHash
+	return "<empty-hash>"
 }
