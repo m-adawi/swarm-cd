@@ -66,7 +66,7 @@ func initRepos() error {
 	}
 
 	if len(repos) != 0 {
-		logger.Info("Some repos were removed from the stack: %v", repos)
+		logger.Info(fmt.Sprintf("Some repos were removed from the stack: %v", repos))
 	}
 
 	repos = newRepos
@@ -135,7 +135,7 @@ func initStacks() error {
 	}
 
 	if len(stacks) != 0 {
-		logger.Info("Some stacks were removed: %v", stacks)
+		logger.Info(fmt.Sprintf("Some stacks were removed: %v", stacks))
 		// Todo: do we need to do something for this.
 	}
 
