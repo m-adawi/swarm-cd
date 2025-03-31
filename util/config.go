@@ -78,7 +78,7 @@ func readRepoConfigs() (err error) {
 		return
 	}
 
-	// **Reset maps before unmarshaling to remove old keys**
+	// Reset maps before unmarshalling to remove old keys**
 	Configs.RepoConfigs = make(map[string]*RepoConfig)
 
 	return reposViper.Unmarshal(&Configs.RepoConfigs)
@@ -93,7 +93,7 @@ func readStackConfigs() (err error) {
 		return
 	}
 
-	// **Reset maps before unmarshaling to remove old keys**
+	// Reset maps before unmarshalling to remove old keys**
 	Configs.StackConfigs = make(map[string]*StackConfig)
 
 	return stacksViper.Unmarshal(&Configs.StackConfigs)

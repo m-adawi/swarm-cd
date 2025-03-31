@@ -112,11 +112,11 @@ func initStacks() error {
 	var newStackStatus = map[string]*StackStatus{}
 
 	for stack, stackConfig := range config.StackConfigs {
-		logger.Info(fmt.Sprintf("Initializing Stack %v", stack))
+		logger.Info(fmt.Sprintf("reading stackConfig for stack: %v", stack))
 
 		stackRepo, ok := repos[stackConfig.Repo]
 		if !ok {
-			return fmt.Errorf("error initializing %s stack, no such repo: %s", stack, stackConfig.Repo)
+			return fmt.Errorf("error reading %s stack, no such repo: %s", stack, stackConfig.Repo)
 		}
 
 		discoverSecrets := config.SopsSecretsDiscovery || stackConfig.SopsSecretsDiscovery
