@@ -2,21 +2,22 @@ package swarmcd
 
 import (
 	"fmt"
-	"log/slog"
-	"os"
-	"path"
-	"strings"
-
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/m-adawi/swarm-cd/util"
+	"log/slog"
+	"os"
+	"path"
+	"strings"
 )
 
 type StackStatus struct {
-	Error    string
-	Revision string
-	RepoURL  string
+	Error                 string
+	Revision              string
+	DeployedStackRevision string
+	DeployedAt            string
+	RepoURL               string
 }
 
 var config *util.Config = &util.Configs

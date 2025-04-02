@@ -46,6 +46,11 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./repos.yaml:/app/repos.yaml:ro
       - ./stacks.yaml:/app/stacks.yaml:ro
+      - swarmcd_data:/data
+  
+volumes:
+  swarmcd_data:
+    driver: local
 ```
 
 Run this on a swarm manager node:
@@ -56,6 +61,35 @@ docker stack deploy --compose-file docker-compose.yaml swarm-cd
 
 This will start SwarmCD, it will periodically check the stack repo
 for new changes, pulling them and updating the stack.
+
+### Configure the database
+SwarmCD uses a minimal DB to track the last deployed revision across 
+container restarts. By default, it stores data in data/revisions.db,
+but this can be changed via the `SWARMCD_DB` environment variable as 
+shown in the below docker-compose file.
+
+```yaml
+# docker-compose.yaml
+version: '3.7'
+services:
+  swarm-cd:
+    image: ghcr.io/m-adawi/swarm-cd:latest
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./repos.yaml:/app/repos.yaml:ro
+      - ./stacks.yaml:/app/stacks.yaml:ro
+      - swarmcd_data:/data
+    environment:
+      - SWARMCD_DB=/data/revisions.db
+  
+volumes:
+  swarmcd_data:
+    driver: local
+```
 
 ## Manage Encrypted Secrets Using SOPS
 
@@ -87,6 +121,7 @@ and set the environment variable SOPS `SOPS_AGE_KEY_FILE`
 to the path of the key file. See the following docker-compose example
 
 ```yaml
+# docker-compose.yaml
 version: '3.7'
 services:
   swarm-cd:
@@ -104,6 +139,12 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./repos.yaml:/app/repos.yaml:ro
       - ./stacks.yaml:/app/stacks.yaml:ro
+      - swarmcd_data:/data
+
+volumes:
+  swarmcd_data:
+    driver: local
+
 secrets:
   age:
     file: age.key
@@ -214,9 +255,17 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./repos.yaml:/app/repos.yaml:ro
       - ./stacks.yaml:/app/stacks.yaml:ro
+      - swarmcd_data:/data
+    environment:
+      - SOPS_AGE_KEY_FILE=/secrets/age.key
     secrets:
       - source: docker-config
         target: /root/.docker/config.json
+        
+volumes:
+  swarmcd_data:
+    driver: local
+
 secrets:
   docker-config:
     file: docker-config.json
