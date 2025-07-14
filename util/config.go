@@ -31,6 +31,7 @@ type Config struct {
 	RepoConfigs          map[string]*RepoConfig  `mapstructure:"repos"`
 	SopsSecretsDiscovery bool                    `mapstructure:"sops_secrets_discovery"`
 	Address              string                  `mapstructure:"address"`
+	ValuesFile           string                  `mapstructure:"values_file"`
 }
 
 var Configs Config
