@@ -27,6 +27,6 @@ stacks:
 address: 0.0.0.0:8080
 
 # If you need the same values on every stack (domain names),
-# you can define a path to a global values file.
+# you can define global values here instead of global.yaml file
 # They can be overriden in the values file at stack level.
-values_file:
+global_values:

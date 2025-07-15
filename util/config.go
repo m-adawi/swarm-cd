@@ -3,6 +3,7 @@ package util
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/spf13/viper"
 )
@@ -31,7 +32,7 @@ type Config struct {
 	RepoConfigs          map[string]*RepoConfig  `mapstructure:"repos"`
 	SopsSecretsDiscovery bool                    `mapstructure:"sops_secrets_discovery"`
 	Address              string                  `mapstructure:"address"`
-	ValuesFile           string                  `mapstructure:"values_file"`
+	GlobalValues         map[string]any          `mapstructure:"global_values"`
 }
 
 var Configs Config
@@ -51,6 +52,14 @@ func LoadConfigs() (err error) {
 		err = readStackConfigs()
 		if err != nil {
 			return fmt.Errorf("could not load stacks file: %w", err)
+		}
+	}
+	if Configs.GlobalValues == nil {
+		if _, errStat := os.Stat("global.yaml"); errStat == nil {
+			Configs.GlobalValues, err = ParseValuesFile("global.yaml", "global")
+			if err != nil {
+				return
+			}
 		}
 	}
 	return
