@@ -58,7 +58,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		return
 	}
 
-	var mergedValuesMap map[string]any
+	mergedValuesMap := make(map[string]any)
 	maps.Copy(mergedValuesMap, swarmStack.globalValuesMap)
 
 	if swarmStack.valuesFile != "" {

@@ -92,22 +92,13 @@ func createHTTPBasicAuth(repoName string) (*http.BasicAuth, error) {
 }
 
 func initStacks() error {
-	var globalValuesMap map[string]any
-	if config.ValuesFile != "" {
-		var err error
-		globalValuesMap, err = util.ParseValuesFile(config.ValuesFile, "global")
-		if err != nil {
-			return err
-		}
-        }
-
 	for stack, stackConfig := range config.StackConfigs {
 		stackRepo, ok := repos[stackConfig.Repo]
 		if !ok {
 			return fmt.Errorf("error initializing %s stack, no such repo: %s", stack, stackConfig.Repo)
 		}
 		discoverSecrets := config.SopsSecretsDiscovery || stackConfig.SopsSecretsDiscovery
-		swarmStack := newSwarmStack(stack, stackRepo, stackConfig.Branch, stackConfig.ComposeFile, stackConfig.SopsFiles, stackConfig.ValuesFile, discoverSecrets, globalValuesMap)
+		swarmStack := newSwarmStack(stack, stackRepo, stackConfig.Branch, stackConfig.ComposeFile, stackConfig.SopsFiles, stackConfig.ValuesFile, discoverSecrets, config.GlobalValues)
 		stacks = append(stacks, swarmStack)
 		stackStatus[stack] = &StackStatus{}
 		stackStatus[stack].RepoURL = stackRepo.url
