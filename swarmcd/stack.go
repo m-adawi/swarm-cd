@@ -13,6 +13,7 @@ import (
 	"github.com/docker/cli/cli/command/stack"
 	"github.com/goccy/go-yaml"
 	"github.com/m-adawi/swarm-cd/util"
+	"github.com/Masterminds/sprig/v3"
 )
 
 type swarmStack struct {
@@ -126,7 +127,7 @@ func (swarmStack *swarmStack) renderComposeTemplate(templateContents []byte, val
 		slog.String("stack", swarmStack.name),
 		slog.String("branch", swarmStack.branch),
 	)
-	templ, err := template.New(swarmStack.name).Parse(string(templateContents[:]))
+	templ, err := template.New(swarmStack.name).Funcs(sprig.FuncMap()).Parse(string(templateContents[:]))
 	if err != nil {
 		return nil, fmt.Errorf("could not parse %s stack compose file as a Go template: %w", swarmStack.name, err)
 	}
