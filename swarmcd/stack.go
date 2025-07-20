@@ -24,6 +24,7 @@ type swarmStack struct {
 	valuesFile      string
 	discoverSecrets bool
 	globalValuesMap map[string]any
+	templateFolder  string
 }
 
 func newSwarmStack(name string, repo *stackRepo, branch string, composePath string, sopsFiles []string, valuesFile string, discoverSecrets bool, globalValuesMap map[string]any) *swarmStack {
@@ -71,13 +72,14 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		maps.Copy(mergedValuesMap, valuesMap)
 	}
 
-	if len(mergedValuesMap) > 0 {
+	if len(mergedValuesMap) > 0 || swarmStack.repo.templateFolder != "" {
 		log.Debug("rendering template...")
 		stackBytes, err = swarmStack.renderComposeTemplate(stackBytes, mergedValuesMap)
 		if err != nil {
 			return
 		}
 	}
+
 
 	log.Debug("parsing stack content...")
 	stackContents, err := swarmStack.parseStackString([]byte(stackBytes))
@@ -120,15 +122,30 @@ func (swarmStack *swarmStack) readStack() ([]byte, error) {
 }
 
 func (swarmStack *swarmStack) renderComposeTemplate(templateContents []byte, valuesMap map[string]any) ([]byte, error) {
+	log := logger.With(
+		slog.String("stack", swarmStack.name),
+		slog.String("branch", swarmStack.branch),
+	)
 	templ, err := template.New(swarmStack.name).Parse(string(templateContents[:]))
 	if err != nil {
 		return nil, fmt.Errorf("could not parse %s stack compose file as a Go template: %w", swarmStack.name, err)
 	}
+
+	if swarmStack.repo.templateFolder != "" {
+		log.Debug("Loading template folder...")
+		_, err = templ.ParseGlob(path.Join(swarmStack.repo.templateFolder, "*.tmpl"))
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	var stackContents bytes.Buffer
 	err = templ.Execute(&stackContents, map[string]map[string]any{"Values": valuesMap})
 	if err != nil {
 		return nil, fmt.Errorf("error rending %s stack compose template: %w", swarmStack.name, err)
 	}
+
+	err = os.WriteFile(swarmStack.name + ".txt", stackContents.Bytes(), 0644)
 	return stackContents.Bytes(), nil
 }
 

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
+	"path"
 	"sync"
 
 	"github.com/go-git/go-git/v5"
@@ -12,25 +14,26 @@ import (
 )
 
 type stackRepo struct {
-	name          string
-	lock          *sync.Mutex
-	url           string
-	gitRepoObject *git.Repository
-	auth          *http.BasicAuth
-	path          string
+	name           string
+	lock           *sync.Mutex
+	url            string
+	gitRepoObject  *git.Repository
+	auth           *http.BasicAuth
+	path           string
+	templateFolder string
 }
 
-func newStackRepo(name string, path string, url string, auth *http.BasicAuth) (*stackRepo, error) {
+func newStackRepo(name string, repoPath string, url string, auth *http.BasicAuth) (*stackRepo, error) {
 	var repo *git.Repository
 	cloneOptions := &git.CloneOptions{
 		URL:  url,
 		Auth: auth,
 	}
-	repo, err := git.PlainClone(path, false, cloneOptions)
+	repo, err := git.PlainClone(repoPath, false, cloneOptions)
 
 	if err != nil {
 		if errors.Is(err, git.ErrRepositoryAlreadyExists) {
-			repo, err = git.PlainOpen(path)
+			repo, err = git.PlainOpen(repoPath)
 			if err != nil {
 				return nil, fmt.Errorf("could not open existing repo %s: %w", name, err)
 			}
@@ -44,13 +47,20 @@ func newStackRepo(name string, path string, url string, auth *http.BasicAuth) (*
 			return nil, fmt.Errorf("could not clone repo %s: %w", name, err)
 		}
 	}
+
+	templateFolder := path.Join(repoPath, "template")
+	_, err = os.Stat(templateFolder)
+	if err != nil {
+		templateFolder = ""
+	}
 	return &stackRepo{
-		name:          name,
-		path:          path,
-		url:           url,
-		auth:          auth,
-		lock:          &sync.Mutex{},
-		gitRepoObject: repo,
+		name:           name,
+		path:           repoPath,
+		url:            url,
+		auth:           auth,
+		lock:           &sync.Mutex{},
+		gitRepoObject:  repo,
+		templateFolder: templateFolder,
 	}, nil
 }
 
