@@ -26,10 +26,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Build docker image
         uses: docker/build-push-action@v6
         with:
           load: true
+          platforms: linux/amd64,linux/arm64
 
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v4
