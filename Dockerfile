@@ -21,7 +21,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /swarm-cd ./cmd/
 RUN go test ./swarmcd/
 
 # Stage 3: Final production image (depends on previous stages)
-FROM alpine:3.2
+FROM alpine:3.22.1
 WORKDIR /app
 RUN apk add --no-cache ca-certificates && update-ca-certificates
 # Copy the built backend binary from the backend build stage
