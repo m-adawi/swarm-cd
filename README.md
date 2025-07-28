@@ -156,8 +156,6 @@ services:
 
   swarm-cd:
     image: ghcr.io/m-adawi/swarm-cd:1.1.0
-    depends_on:
-      - socket_proxy
     environment:
       DOCKER_HOST: tcp://socket_proxy:2375
     configs:
