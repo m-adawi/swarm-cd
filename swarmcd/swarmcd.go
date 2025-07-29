@@ -2,12 +2,13 @@ package swarmcd
 
 import (
 	"fmt"
+	"github.com/m-adawi/swarm-cd/util"
 	"sync"
 	"time"
 )
 
-var stackStatus map[string]*StackStatus = map[string]*StackStatus{}
-var stacks []*swarmStack
+var stackStatus = map[string]*StackStatus{}
+var stacks = map[string]*swarmStack{}
 
 func Run() {
 	logger.Info("starting SwarmCD")
@@ -15,12 +16,34 @@ func Run() {
 		var waitGroup sync.WaitGroup
 		logger.Info("updating stacks...")
 		for _, swarmStack := range stacks {
+			logger.Debug(fmt.Sprintf("Starting go routine for %v", swarmStack.name))
 			waitGroup.Add(1)
 			go updateStackThread(swarmStack, &waitGroup)
 		}
 		waitGroup.Wait()
 		logger.Info("waiting for the update interval")
 		time.Sleep(time.Duration(config.UpdateInterval) * time.Second)
+
+		logger.Info("check if new repos or new stacks are available")
+		updateStackConfigs()
+	}
+}
+
+func updateStackConfigs() {
+	err := util.LoadConfigs()
+	if err != nil {
+		logger.Info("Error calling loadConfig again: %v", err)
+		return
+	}
+
+	err = initRepos()
+	if err != nil {
+		logger.Info("Error calling initRepos again: %v", err)
+	}
+
+	err = initStacks()
+	if err != nil {
+		logger.Info("Error calling initStacks again: %v", err)
 	}
 }
 
@@ -30,8 +53,8 @@ func updateStackThread(swarmStack *swarmStack, waitGroup *sync.WaitGroup) {
 	defer repoLock.Unlock()
 	defer waitGroup.Done()
 
-	logger.Info(fmt.Sprintf("updating %s stack", swarmStack.name))
-	revision, err := swarmStack.updateStack()
+	logger.Info(fmt.Sprintf("%s updating stack", swarmStack.name))
+	stackMetadata, err := swarmStack.updateStack()
 	if err != nil {
 		stackStatus[swarmStack.name].Error = err.Error()
 		logger.Error(err.Error())
@@ -39,8 +62,10 @@ func updateStackThread(swarmStack *swarmStack, waitGroup *sync.WaitGroup) {
 	}
 
 	stackStatus[swarmStack.name].Error = ""
-	stackStatus[swarmStack.name].Revision = revision
-	logger.Info(fmt.Sprintf("done updating %s stack", swarmStack.name))
+	stackStatus[swarmStack.name].Revision = stackMetadata.repoRevision
+	stackStatus[swarmStack.name].DeployedStackRevision = stackMetadata.deployedStackRevision
+	stackStatus[swarmStack.name].DeployedAt = stackMetadata.deployedAt.Format(time.RFC3339)
+	logger.Info(fmt.Sprintf("%s done updating stack", swarmStack.name))
 }
 
 func GetStackStatus() map[string]*StackStatus {
