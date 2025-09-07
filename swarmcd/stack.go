@@ -46,6 +46,20 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		slog.String("stack", swarmStack.name),
 		slog.String("branch", swarmStack.branch),
 	)
+	
+	log.Debug("resetting cache dir...")
+	stackStatus[swarmStack.name].TemplatePath = ""
+	stackStatus[swarmStack.name].ComposePath = ""
+	cacheDir := path.Join("cache/stacks", swarmStack.name)
+	err = os.RemoveAll(cacheDir)
+	if err != nil {
+		return "", fmt.Errorf("could remove cache dir for stack %s: %s", swarmStack.name, err)
+	}
+
+	err = os.MkdirAll(cacheDir, 0750)
+	if err != nil {
+		return "", fmt.Errorf("could create cache dir for stack %s: %s", swarmStack.name, err)
+	}
 
 	log.Debug("pulling changes...")
 	revision, err = swarmStack.repo.pullChanges(swarmStack.branch)
@@ -56,6 +70,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 
 	log.Debug("reading stack file...")
 	stackBytes, err := swarmStack.readStack()
+	originalStackBytes := bytes.Clone(stackBytes)
 	if err != nil {
 		return
 	}
@@ -108,6 +123,19 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		return
 	}
 
+	log.Debug("Writing cache files...")
+	if bytes.Compare(originalStackBytes, stackBytes) != 0 {
+		templateCachePath := path.Join(cacheDir, "template.yaml")
+		err = os.WriteFile(templateCachePath, originalStackBytes, 0640)
+		if err != nil {
+			return "", fmt.Errorf("could not save a copy of stack %s original template to %s: %s", swarmStack.name, templateCachePath, err)
+		}
+		stackStatus[swarmStack.name].TemplatePath = templateCachePath
+	}
+	composeCache := path.Join(cacheDir, "compose.yaml")
+	os.WriteFile(composeCache, stackBytes, 0640)
+	stackStatus[swarmStack.name].ComposePath = composeCache
+
 	log.Debug("deploying stack...")
 	err = swarmStack.deployStack()
 	return
@@ -145,8 +173,6 @@ func (swarmStack *swarmStack) renderComposeTemplate(templateContents []byte, val
 	if err != nil {
 		return nil, fmt.Errorf("error rending %s stack compose template: %w", swarmStack.name, err)
 	}
-
-	err = os.WriteFile(swarmStack.name + ".txt", stackContents.Bytes(), 0644)
 	return stackContents.Bytes(), nil
 }
 

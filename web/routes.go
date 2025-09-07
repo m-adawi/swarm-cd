@@ -14,6 +14,7 @@ func init() {
 	router.GET("/stacks", getStacks)
 	router.StaticFile("/ui", "ui/index.html")
 	router.Static("/assets", "ui/assets")
+	router.Static("/cache", "cache")
 	router.GET("/", func(c *gin.Context) {
 		c.Redirect(302, "/ui")
 	})
