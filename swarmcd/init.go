@@ -14,9 +14,11 @@ import (
 )
 
 type StackStatus struct {
-	Error    string
-	Revision string
-	RepoURL  string
+	Error         string
+	Revision      string
+	RepoURL       string
+	ComposePath   string
+	TemplatePath  string
 }
 
 var config *util.Config = &util.Configs

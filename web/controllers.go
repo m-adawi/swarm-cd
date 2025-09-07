@@ -17,6 +17,8 @@ func getStacks(ctx *gin.Context) {
 			"Error": v.Error,
 			"RepoURL": v.RepoURL,
 			"Revision": v.Revision,
+			"TemplatePath": v.TemplatePath,
+			"ComposePath": v.ComposePath,
 		})
 	}
 	sort.Slice(stacks, func(i, j int) bool {
