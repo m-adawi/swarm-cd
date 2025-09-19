@@ -55,6 +55,12 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		return
 	}
 
+	log.Debug("decrypting declared sops files...")
+	err = swarmStack.decryptSopsFiles(swarmStack.sopsFiles)
+	if err != nil {
+		return "", fmt.Errorf("failed to decrypt one or more sops files for %s stack: %w", swarmStack.name, err)
+	}
+
 	if swarmStack.valuesFile != "" {
 		log.Debug("rendering template...")
 		stackBytes, err = swarmStack.renderComposeTemplate(stackBytes)
@@ -69,10 +75,16 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		return
 	}
 
-	log.Debug("decrypting secrets...")
-	err = swarmStack.decryptSopsFiles(stackContents)
-	if err != nil {
-		return "", fmt.Errorf("failed to decrypt one or more sops files for %s stack: %w", swarmStack.name, err)
+	if swarmStack.discoverSecrets {
+		log.Debug("decrypting secrets...")
+		sopsFiles, err := discoverSecrets(stackContents, swarmStack.composePath)
+		if err != nil {
+			return "", fmt.Errorf("failed to discover sops encrypted secrets for %s stack: %w", swarmStack.name, err)
+		}
+		err = swarmStack.decryptSopsFiles(sopsFiles)
+		if err != nil {
+			return "", fmt.Errorf("failed to decrypt one or more sops files for %s stack: %w", swarmStack.name, err)
+		}
 	}
 
 	log.Debug("rotating configs and secrets...")
@@ -130,16 +142,7 @@ func (swarmStack *swarmStack) parseStackString(stackContent []byte) (map[string]
 	return composeMap, nil
 }
 
-func (swarmStack *swarmStack) decryptSopsFiles(composeMap map[string]any) (err error) {
-	var sopsFiles []string
-	if !swarmStack.discoverSecrets {
-		sopsFiles = swarmStack.sopsFiles
-	} else {
-		sopsFiles, err = discoverSecrets(composeMap, swarmStack.composePath)
-		if err != nil {
-			return
-		}
-	}
+func (swarmStack *swarmStack) decryptSopsFiles(sopsFiles []string) (err error) {
 	log := logger.With(
 		slog.String("stack", swarmStack.name),
 		slog.String("branch", swarmStack.branch),
