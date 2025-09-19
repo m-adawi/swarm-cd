@@ -14,9 +14,11 @@ import (
 )
 
 type StackStatus struct {
-	Error    string
-	Revision string
-	RepoURL  string
+	Error         string
+	Revision      string
+	RepoURL       string
+	ComposePath   string
+	TemplatePath  string
 }
 
 var config *util.Config = &util.Configs
@@ -98,7 +100,7 @@ func initStacks() error {
 			return fmt.Errorf("error initializing %s stack, no such repo: %s", stack, stackConfig.Repo)
 		}
 		discoverSecrets := config.SopsSecretsDiscovery || stackConfig.SopsSecretsDiscovery
-		swarmStack := newSwarmStack(stack, stackRepo, stackConfig.Branch, stackConfig.ComposeFile, stackConfig.SopsFiles, stackConfig.ValuesFile, discoverSecrets)
+		swarmStack := newSwarmStack(stack, stackRepo, stackConfig.Branch, stackConfig.ComposeFile, stackConfig.SopsFiles, stackConfig.ValuesFile, discoverSecrets, config.GlobalValues, )
 		stacks = append(stacks, swarmStack)
 		stackStatus[stack] = &StackStatus{}
 		stackStatus[stack].RepoURL = stackRepo.url
