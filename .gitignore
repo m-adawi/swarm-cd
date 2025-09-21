@@ -1,1 +1,6 @@
 swarm-cd
+
+docker-compose.yaml
+repos.yaml
+stacks.yaml
+config.yaml

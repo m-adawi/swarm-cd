@@ -30,8 +30,8 @@ func updateStackThread(swarmStack *swarmStack, waitGroup *sync.WaitGroup) {
 	defer repoLock.Unlock()
 	defer waitGroup.Done()
 
-	logger.Info(fmt.Sprintf("updating %s stack", swarmStack.name))
-	revision, err := swarmStack.updateStack()
+	logger.Info(fmt.Sprintf("%s updating stack", swarmStack.name))
+	stackMetadata, err := swarmStack.updateStack()
 	if err != nil {
 		stackStatus[swarmStack.name].Error = err.Error()
 		logger.Error(err.Error())
@@ -39,8 +39,10 @@ func updateStackThread(swarmStack *swarmStack, waitGroup *sync.WaitGroup) {
 	}
 
 	stackStatus[swarmStack.name].Error = ""
-	stackStatus[swarmStack.name].Revision = revision
-	logger.Info(fmt.Sprintf("done updating %s stack", swarmStack.name))
+	stackStatus[swarmStack.name].Revision = stackMetadata.repoRevision
+	stackStatus[swarmStack.name].DeployedStackRevision = stackMetadata.deployedStackRevision
+	stackStatus[swarmStack.name].DeployedAt = stackMetadata.deployedAt.Format(time.RFC3339)
+	logger.Info(fmt.Sprintf("%s done updating stack", swarmStack.name))
 }
 
 func GetStackStatus() map[string]*StackStatus {
