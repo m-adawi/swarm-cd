@@ -23,7 +23,7 @@ RUN go test ./swarmcd/
 # Stage 3: Final production image (depends on previous stages)
 FROM alpine:3.22.1
 WORKDIR /app
-RUN apk add --no-cache ca-certificates && update-ca-certificates
+RUN apk add --no-cache ca-certificates gnupg && update-ca-certificates
 # Copy the built backend binary from the backend build stage
 COPY --from=backend-build /swarm-cd /app/
 # Copy the built frontend from the frontend build stage
@@ -31,4 +31,6 @@ COPY --from=frontend-build /ui/dist/ /app/ui/
 # Sets the web server mode to release
 ENV GIN_MODE=release
 # Set the entry point for the application
-CMD ["/app/swarm-cd"]
+COPY entrypoint.sh /
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
