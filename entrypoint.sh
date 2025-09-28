@@ -19,5 +19,5 @@ if [ -z $@ ]; then
     echo "entrypoint.sh: starting SwarmCD..."
 	/app/swarm-cd
 else
-	$@
+	exec "$@"
 fi
