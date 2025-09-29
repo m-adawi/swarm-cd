@@ -34,3 +34,4 @@ ENV GIN_MODE=release
 COPY entrypoint.sh /
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/app/swarm-cd"]

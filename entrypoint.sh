@@ -14,4 +14,4 @@ else
     echo "entrypoint.sh: no gpg key found, skipping import"
 fi
 
-exec /app/swarm-cd "$@"
+exec "$@"
