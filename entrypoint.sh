@@ -14,10 +14,4 @@ else
     echo "entrypoint.sh: no gpg key found, skipping import"
 fi
 
-# Call the app
-if [ -z $@ ]; then
-    echo "entrypoint.sh: starting SwarmCD..."
-	/app/swarm-cd
-else
-	exec "$@"
-fi
+exec /app/swarm-cd "$@"
