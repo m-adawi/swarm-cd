@@ -87,8 +87,11 @@ can be a little different:
 to encrypt, you have to mount the age key file to SwarmCD
 and set the environment variable SOPS `SOPS_AGE_KEY_FILE`
 to the path of the key file.
-- If you used gpg, you have to set the environment variable
-`SOPS_GPG_PRIVATE_KEY` to your gpg private key.
+- If you used gpg, you have to mount the file containing your gpg private
+key in the container, and set the environment variable
+`SOPS_GPG_PRIVATE_KEY_FILE` to the path of the gpg private key file.
+It is also possible to directly provide the gpg key in the `SOPS_GPG_PRIVATE_KEY`
+environment variable.
 
 See the following docker-compose example.
 
@@ -103,11 +106,11 @@ services:
           - node.role == manager
     secrets:
       - source: age
-        target: /secrets/age.key
+        target: /secrets/age.key # or /secrets/private.gpg
     environment:
       - SOPS_AGE_KEY_FILE=/secrets/age.key
       # or
-      - SOPS_GPG_PRIVATE_KEY="-----BEGIN PGP PRIVATE KEY BLOCK-----"
+      - SOPS_GPG_PRIVATE_KEY=/secrets/private.gpg
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./repos.yaml:/app/repos.yaml:ro
