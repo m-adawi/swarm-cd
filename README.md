@@ -110,7 +110,7 @@ services:
     environment:
       - SOPS_AGE_KEY_FILE=/secrets/age.key
       # or
-      - SOPS_GPG_PRIVATE_KEY=/secrets/private.gpg
+      - SOPS_GPG_PRIVATE_KEY_FILE=/secrets/private.gpg
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./repos.yaml:/app/repos.yaml:ro
