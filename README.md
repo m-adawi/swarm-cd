@@ -81,10 +81,19 @@ nginx-ssl:
 
 Then you need to set the SOPS environment variables that are required
 to decrypt the files.
-For example, if you used [age](https://github.com/FiloSottile/age)
-to encrypt them, you have to mount the age key file to SwarmCD
+Depending on the backend you used for sops encryption, the configuration
+can be a little different:
+- If you used [age](https://github.com/FiloSottile/age)
+to encrypt, you have to mount the age key file to SwarmCD
 and set the environment variable SOPS `SOPS_AGE_KEY_FILE`
-to the path of the key file. See the following docker-compose example
+to the path of the key file.
+- If you used gpg, you have to mount the file containing your gpg private
+key in the container, and set the environment variable
+`SOPS_GPG_PRIVATE_KEY_FILE` to the path of the gpg private key file.
+It is also possible to directly provide the gpg key in the `SOPS_GPG_PRIVATE_KEY`
+environment variable.
+
+See the following docker-compose example.
 
 ```yaml
 version: '3.7'
@@ -97,9 +106,11 @@ services:
           - node.role == manager
     secrets:
       - source: age
-        target: /secrets/age.key
+        target: /secrets/age.key # or /secrets/private.gpg
     environment:
       - SOPS_AGE_KEY_FILE=/secrets/age.key
+      # or
+      - SOPS_GPG_PRIVATE_KEY_FILE=/secrets/private.gpg
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./repos.yaml:/app/repos.yaml:ro
