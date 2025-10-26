@@ -9,7 +9,7 @@ import (
 func TestRotateExternalObjects(t *testing.T) {
 	repo := &stackRepo{name: "test", path: "test", url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
 	var valuesMap map[string]any
-	stack := newSwarmStack("test", repo, "main", "docker-compose.yaml", nil, "", false, valuesMap)
+	stack := NewSwarmStack("test", repo, "main", "docker-compose.yaml", nil, "", false, valuesMap, "template")
 	objects := map[string]any{
 		"my-secret": map[string]any{"external": true},
 	}
@@ -23,7 +23,7 @@ func TestRotateExternalObjects(t *testing.T) {
 func TestSecretDiscovery(t *testing.T) {
 	repo := &stackRepo{name: "test", path: "test", url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
 	var valuesMap map[string]any
-	stack := newSwarmStack("test", repo, "main", "stacks/docker-compose.yaml", nil, "", false, valuesMap)
+	stack := NewSwarmStack("test", repo, "main", "stacks/docker-compose.yaml", nil, "", false, valuesMap, "template")
 	stackString := []byte(`services:
   my-service:
     image: my-image

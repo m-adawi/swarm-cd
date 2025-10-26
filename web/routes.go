@@ -12,9 +12,10 @@ var router *gin.Engine = gin.New()
 func init() {
 	router.Use(sloggin.New(util.Logger))
 	router.GET("/stacks", getStacks)
+	router.GET("/stacks/:stackName/compose.yaml", getCompose)
+	router.GET("/stacks/:stackName/rendered.yaml", getRendered)
 	router.StaticFile("/ui", "ui/index.html")
 	router.Static("/assets", "ui/assets")
-	router.Static("/cache", "cache")
 	router.GET("/", func(c *gin.Context) {
 		c.Redirect(302, "/ui")
 	})

@@ -136,6 +136,100 @@ Please note that:
 - if the global setting is set to `true`, it ignores individual stacks overrides.
 - if the stack-level setting is set to `true`, it ignores the `sops_files` setting altogether.
 
+## Configuring stacks
+
+### Using variables from a value file
+When defining a stack, you can provide a path to a yaml file with variables by setting the `value_file` field.
+Variables defined in this file can then be accessed in the compose file.
+
+[Sprig](https://masterminds.github.io/sprig/) functions can be used in the compose files.
+
+```yaml
+# value_file.yaml
+---
+myvar: myvalue
+mylist:
+  - a
+  - b
+  - c
+```
+
+```yaml
+# compose.yaml
+services:
+  foo:
+    image: foo
+    environment:
+      MY_VAR: "{{ .Values.myvar }}"
+      MY_LIST: "{{ .Values.mylist | join ":" }}" # == "a:b:c"
+```
+
+### Defining global variables
+
+Variables can be defined for all stack in a `global_values.yaml` file, or directly in the `config.yaml` file using the `global_values` field.
+
+They can be overriden using a stack value file.
+
+
+```yaml
+# global_values.yaml
+---
+var_a: fromglobal
+var_b: fromglobal
+```
+
+```yaml
+# value_file.yaml
+---
+var_b: overriden
+```
+
+```yaml
+# compose.yaml
+services:
+  foo:
+    image: foo
+    environment:
+      MY_VAR_A: "{{ .Values.var_a }}" # == fromglobal
+      MY_VAR_B: "{{ .Values.var_b }}" # == overriden
+```
+
+### Templating
+
+Templates are automatically imported from the `template` folder. They can be used in compose files like so:
+
+```yaml
+# template/storage.tmpl
+
+{{- define "nfs_volume"  }}
+  {{ .name }}-vol:
+    driver_opts:
+      type: nfs
+      o: addr=1.2.3.4,nfsvers=4
+      device: :/path/to/{{ .name }}
+{{- end }}
+```
+
+```yaml
+# compose.yaml
+services:
+  foo:
+    image: foo
+    volumes:
+      - foo-vol:/etc/foo
+
+volumes:
+{{ template "nfs_volume" (dict "name" "foo") }}
+```
+
+### Testing template generation
+
+For debugging purpose, you can generate your compose without a running instance of swarm-cd. For that, you can call `/app/template-gen, available in the docker image. For example:
+``` sh
+docker run -v $(pwd)/testdata:/data --rm -it ghcr.io/m-adawi/swarm-cd:latest /app/template-gen --valuefile /data/values.yml /data/compose.yml out.yaml
+```
+For a list of all available flags, use the `--help` flag.
+
 ## Connect SwarmCD to a remote docker socket
 
 You can use the `DOCKER_HOST` environment variable to point SwarmCD to a remote docker socket,

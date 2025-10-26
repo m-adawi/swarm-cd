@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
-	"path"
 	"sync"
 
 	"github.com/go-git/go-git/v5"
@@ -20,7 +18,6 @@ type stackRepo struct {
 	gitRepoObject  *git.Repository
 	auth           *http.BasicAuth
 	path           string
-	templateFolder string
 }
 
 func newStackRepo(name string, repoPath string, url string, auth *http.BasicAuth) (*stackRepo, error) {
@@ -48,11 +45,6 @@ func newStackRepo(name string, repoPath string, url string, auth *http.BasicAuth
 		}
 	}
 
-	templateFolder := path.Join(repoPath, "template")
-	_, err = os.Stat(templateFolder)
-	if err != nil {
-		templateFolder = ""
-	}
 	return &stackRepo{
 		name:           name,
 		path:           repoPath,
@@ -60,7 +52,6 @@ func newStackRepo(name string, repoPath string, url string, auth *http.BasicAuth
 		auth:           auth,
 		lock:           &sync.Mutex{},
 		gitRepoObject:  repo,
-		templateFolder: templateFolder,
 	}, nil
 }
 

@@ -4,9 +4,9 @@ import { StackStatus } from "../../src/hooks/useFetchStatuses"
 
 describe("StatusCardList", () => {
   const statuses: StackStatus[] = [
-    { Name: "Foobar", Error: "", Revision: "1.0.0", RepoURL: "https://www.url1.com", TemplatePath: "", ComposePath: "" },
-    { Name: "FooFoo", Error: "", Revision: "2.0.0", RepoURL: "https://www.url2.com", TemplatePath: "", ComposePath: "" },
-    { Name: "Boobaz", Error: "Oh no!!!", Revision: "2.0.0", RepoURL: "https://www.url3.com", TemplatePath: "", ComposePath: "" }
+    { Name: "Foobar", Error: "", Revision: "1.0.0", RepoURL: "https://www.url1.com", Templated: false },
+    { Name: "FooFoo", Error: "", Revision: "2.0.0", RepoURL: "https://www.url2.com", Templated: false },
+    { Name: "Boobaz", Error: "Oh no!!!", Revision: "2.0.0", RepoURL: "https://www.url3.com", Templated: false }
   ]
 
   it("should render no statuses if the list of statuses is empty", () => {

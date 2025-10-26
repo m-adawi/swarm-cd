@@ -6,15 +6,13 @@ function StatusCard({
   error,
   revision,
   repoURL,
-  templatePath,
-  composePath
+  templated
 }: Readonly<{
   name: string
   error: string
   revision: string
   repoURL: string
-  templatePath: string
-  composePath: string
+  templated: boolean
 }>): React.ReactElement {
   return (
     <Box borderWidth="1px" borderRadius="sm" overflow="hidden" p={4} boxShadow="lg">
@@ -37,19 +35,15 @@ function StatusCard({
           {repoURL}
         </Link>
 
-        {templatePath !== "" && (
+        <KeyText>Compose file:</KeyText>
+        <Link color="teal.500" href={`/stacks/${name}/compose.yaml`} isExternal>
+          compose.yaml
+        </Link>
+        {templated && (
           <>
-            <KeyText>Template file:</KeyText>
-            <Link color="teal.500" href={templatePath} isExternal>
-              template.yaml
-            </Link>
-          </>
-	)}
-        {composePath !== "" && (
-          <>
-            <KeyText>Compose file:</KeyText>
-            <Link color="teal.500" href={composePath} isExternal>
-              compose.yaml
+            <KeyText>Rendered file:</KeyText>
+            <Link color="teal.500" href={`/stacks/${name}/rendered.yaml`} isExternal>
+              rendered.yaml
             </Link>
           </>
 	)}

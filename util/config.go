@@ -38,7 +38,7 @@ type Config struct {
 var Configs Config
 
 func LoadConfigs() (err error) {
-	err = readConfig()
+	err = ReadConfig("")
 	if err != nil {
 		return fmt.Errorf("could not read configuration file: %w", err)
 	}
@@ -55,8 +55,8 @@ func LoadConfigs() (err error) {
 		}
 	}
 	if Configs.GlobalValues == nil {
-		if _, errStat := os.Stat("global.yaml"); errStat == nil {
-			Configs.GlobalValues, err = ParseValuesFile("global.yaml", "global")
+		if _, errStat := os.Stat("global_values.yaml"); errStat == nil {
+			Configs.GlobalValues, err = ParseValuesFile("global_values.yaml", "global")
 			if err != nil {
 				return
 			}
@@ -65,10 +65,13 @@ func LoadConfigs() (err error) {
 	return
 }
 
-func readConfig() (err error) {
+func ReadConfig(configPath string) (err error) {
 	configViper := viper.New()
 	configViper.SetConfigName("config")
 	configViper.AddConfigPath(".")
+	if configPath != "" {
+		configViper.SetConfigFile(configPath)
+	}
 	configViper.SetDefault("update_interval", 120)
 	configViper.SetDefault("repos_path", "repos")
 	configViper.SetDefault("auto_rotate", true)
