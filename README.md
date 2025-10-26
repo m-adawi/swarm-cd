@@ -196,7 +196,8 @@ services:
 
 ### Templating
 
-Templates are automatically imported from the `template` folder. They can be used in compose files like so:
+Templates are automatically imported from the `template` folder. Swarmcd will read any file with the `.tmpl` extension. For a syntax breakdown, see the [official go documentation](https://pkg.go.dev/text/template).
+They can be used in compose files like so:
 
 ```yaml
 # template/storage.tmpl
