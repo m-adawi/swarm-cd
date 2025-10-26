@@ -14,6 +14,7 @@ type StackConfig struct {
 	ValuesFile           string   `mapstructure:"values_file"`
 	SopsFiles            []string `mapstructure:"sops_files"`
 	SopsSecretsDiscovery bool     `mapstructure:"sops_secrets_discovery"`
+	EnvironmentsFile     string   `mapstructure:"environments_file"`
 }
 
 type RepoConfig struct {
@@ -31,6 +32,7 @@ type Config struct {
 	RepoConfigs          map[string]*RepoConfig  `mapstructure:"repos"`
 	SopsSecretsDiscovery bool                    `mapstructure:"sops_secrets_discovery"`
 	Address              string                  `mapstructure:"address"`
+	EnvironmentLabel     string                  `mapstructure:"environment_label"`
 }
 
 var Configs Config
@@ -64,6 +66,7 @@ func readConfig() (err error) {
 	configViper.SetDefault("auto_rotate", true)
 	configViper.SetDefault("sops_secrets_discovery", false)
 	configViper.SetDefault("address", "0.0.0.0:8080")
+	configViper.SetDefault("environment_label", "swarmcd.environment")
 	err = configViper.ReadInConfig()
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
 		return

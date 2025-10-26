@@ -1,0 +1,60 @@
+# SwarmCD environments configuration file
+# This file should be placed in your stack's git repository
+# and referenced in stacks.yaml via the environments_file field
+
+# Define environment-specific variables for your stack
+# The current environment is detected from the Docker Swarm manager node label
+# (default label: swarmcd.environment)
+
+environments:
+  # Development environment variables
+  dev:
+    DB_HOST: dev-database.local
+    DB_PORT: "5432"
+    DB_NAME: myapp_dev
+    API_URL: https://dev-api.example.com
+    API_KEY: dev-api-key-12345
+    LOG_LEVEL: debug
+    REDIS_HOST: redis-dev.internal
+    CACHE_TTL: "60"
+    MAX_CONNECTIONS: "10"
+
+  # Staging environment variables
+  staging:
+    DB_HOST: staging-database.local
+    DB_PORT: "5432"
+    DB_NAME: myapp_staging
+    API_URL: https://staging-api.example.com
+    API_KEY: staging-api-key-67890
+    LOG_LEVEL: info
+    REDIS_HOST: redis-staging.internal
+    CACHE_TTL: "300"
+    MAX_CONNECTIONS: "50"
+
+  # Production environment variables
+  prod:
+    DB_HOST: prod-database.local
+    DB_PORT: "5432"
+    DB_NAME: myapp_production
+    API_URL: https://api.example.com
+    API_KEY: prod-api-key-abcde
+    LOG_LEVEL: warn
+    REDIS_HOST: redis-prod.internal
+    CACHE_TTL: "600"
+    MAX_CONNECTIONS: "100"
+
+# Usage in docker-compose.yaml:
+#
+# services:
+#   app:
+#     image: myapp:latest
+#     environment:
+#       DATABASE_HOST: ${DB_HOST}
+#       DATABASE_PORT: ${DB_PORT}
+#       DATABASE_NAME: ${DB_NAME}
+#       API_ENDPOINT: ${API_URL}
+#       API_KEY: ${API_KEY}
+#       LOG_LEVEL: ${LOG_LEVEL}
+#       REDIS_URL: redis://${REDIS_HOST}:6379
+#       CACHE_TTL_SECONDS: ${CACHE_TTL}
+#       DB_MAX_CONNECTIONS: ${MAX_CONNECTIONS}
