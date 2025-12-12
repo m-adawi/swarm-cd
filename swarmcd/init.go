@@ -19,7 +19,7 @@ type StackStatus struct {
 	RepoURL  string
 }
 
-var config *util.Config = &util.Configs
+var Config *util.Config = &util.Configs
 
 var logger *slog.Logger = util.Logger
 
@@ -44,8 +44,8 @@ func Init() (err error) {
 }
 
 func initRepos() error {
-	for repoName, repoConfig := range config.RepoConfigs {
-		repoPath := path.Join(config.ReposPath, repoName)
+	for repoName, repoConfig := range Config.RepoConfigs {
+		repoPath := path.Join(Config.ReposPath, repoName)
 		auth, err := createHTTPBasicAuth(repoName)
 		if err != nil {
 			return err
@@ -59,7 +59,7 @@ func initRepos() error {
 }
 
 func createHTTPBasicAuth(repoName string) (*http.BasicAuth, error) {
-	repoConfig := config.RepoConfigs[repoName]
+	repoConfig := Config.RepoConfigs[repoName]
 	// assume repo is public and no auth is required
 	if repoConfig.Username == "" && repoConfig.Password == "" && repoConfig.PasswordFile == "" {
 		return nil, nil
@@ -92,12 +92,12 @@ func createHTTPBasicAuth(repoName string) (*http.BasicAuth, error) {
 }
 
 func initStacks() error {
-	for stack, stackConfig := range config.StackConfigs {
+	for stack, stackConfig := range Config.StackConfigs {
 		stackRepo, ok := repos[stackConfig.Repo]
 		if !ok {
 			return fmt.Errorf("error initializing %s stack, no such repo: %s", stack, stackConfig.Repo)
 		}
-		discoverSecrets := config.SopsSecretsDiscovery || stackConfig.SopsSecretsDiscovery
+		discoverSecrets := Config.SopsSecretsDiscovery || stackConfig.SopsSecretsDiscovery
 		swarmStack := newSwarmStack(stack, stackRepo, stackConfig.Branch, stackConfig.ComposeFile, stackConfig.SopsFiles, stackConfig.ValuesFile, discoverSecrets)
 		stacks = append(stacks, swarmStack)
 		stackStatus[stack] = &StackStatus{}

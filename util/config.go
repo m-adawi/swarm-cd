@@ -25,6 +25,7 @@ type RepoConfig struct {
 
 type Config struct {
 	ReposPath            string                  `mapstructure:"repos_path"`
+	Secret               string                  `mapstructure:"secret"`
 	UpdateInterval       int                     `mapstructure:"update_interval"`
 	AutoRotate           bool                    `mapstructure:"auto_rotate"`
 	StackConfigs         map[string]*StackConfig `mapstructure:"stacks"`
@@ -62,6 +63,7 @@ func readConfig() (err error) {
 	configViper.SetDefault("update_interval", 120)
 	configViper.SetDefault("repos_path", "repos")
 	configViper.SetDefault("auto_rotate", true)
+	configViper.SetDefault("secret", "123456")
 	configViper.SetDefault("sops_secrets_discovery", false)
 	configViper.SetDefault("address", "0.0.0.0:8080")
 	err = configViper.ReadInConfig()

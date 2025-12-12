@@ -181,7 +181,7 @@ func (swarmStack *swarmStack) rotateConfigsAndSecrets(composeMap map[string]any)
 	if configs, ok := composeMap["configs"].(map[string]any); ok {
 		err := swarmStack.rotateObjects(configs, "configs")
 		if err != nil {
-			return fmt.Errorf("could not rotate one or more config files of stack %s: %w", swarmStack.name, err)
+			return fmt.Errorf("could not rotate one or more Config files of stack %s: %w", swarmStack.name, err)
 		}
 	}
 	if secrets, ok := composeMap["secrets"].(map[string]any); ok {

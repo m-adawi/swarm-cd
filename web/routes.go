@@ -12,6 +12,7 @@ var router *gin.Engine = gin.New()
 func init() {
 	router.Use(sloggin.New(util.Logger))
 	router.GET("/stacks", getStacks)
+	router.POST("/update/:secret/:name", updateStack)
 	router.StaticFile("/ui", "ui/index.html")
 	router.Static("/assets", "ui/assets")
 	router.GET("/", func(c *gin.Context) {
