@@ -230,6 +230,7 @@ secrets:
   docker-config:
     file: docker-config.json
 ```
+Note: if running swarmcd as a user other than root, modify the docker config mount path to match.
 
 ## Documentation
 
