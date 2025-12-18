@@ -2,21 +2,22 @@ package swarmcd
 
 import (
 	"fmt"
-	"log/slog"
-	"os"
-	"path"
-	"strings"
-
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/m-adawi/swarm-cd/util"
+	"log/slog"
+	"os"
+	"path"
+	"strings"
 )
 
 type StackStatus struct {
-	Error    string
-	Revision string
-	RepoURL  string
+	Error                 string
+	Revision              string
+	DeployedStackRevision string
+	DeployedAt            string
+	RepoURL               string
 }
 
 var config *util.Config = &util.Configs
@@ -44,17 +45,32 @@ func Init() (err error) {
 }
 
 func initRepos() error {
+	var newRepos = map[string]*stackRepo{}
+
 	for repoName, repoConfig := range config.RepoConfigs {
+		if repo, exists := repos[repoName]; exists {
+			newRepos[repoName] = repo
+			delete(repos, repoName)
+			continue
+		}
+
 		repoPath := path.Join(config.ReposPath, repoName)
 		auth, err := createHTTPBasicAuth(repoName)
 		if err != nil {
 			return err
 		}
-		repos[repoName], err = newStackRepo(repoName, repoPath, repoConfig.Url, auth)
+		newRepos[repoName], err = newStackRepo(repoName, repoPath, repoConfig.Url, auth)
 		if err != nil {
 			return err
 		}
 	}
+
+	if len(repos) != 0 {
+		logger.Info(fmt.Sprintf("Some repos were removed from the stack: %v", repos))
+	}
+
+	repos = newRepos
+
 	return nil
 }
 
@@ -92,17 +108,40 @@ func createHTTPBasicAuth(repoName string) (*http.BasicAuth, error) {
 }
 
 func initStacks() error {
+	var newStacks = map[string]*swarmStack{}
+	var newStackStatus = map[string]*StackStatus{}
+
 	for stack, stackConfig := range config.StackConfigs {
+		logger.Info(fmt.Sprintf("reading stackConfig for stack: %v", stack))
+
 		stackRepo, ok := repos[stackConfig.Repo]
 		if !ok {
-			return fmt.Errorf("error initializing %s stack, no such repo: %s", stack, stackConfig.Repo)
+			return fmt.Errorf("error reading %s stack, no such repo: %s", stack, stackConfig.Repo)
 		}
+
 		discoverSecrets := config.SopsSecretsDiscovery || stackConfig.SopsSecretsDiscovery
 		swarmStack := newSwarmStack(stack, stackRepo, stackConfig.Branch, stackConfig.ComposeFile, stackConfig.SopsFiles, stackConfig.ValuesFile, discoverSecrets)
-		stacks = append(stacks, swarmStack)
-		stackStatus[stack] = &StackStatus{}
-		stackStatus[stack].RepoURL = stackRepo.url
+
+		newStacks[stack] = swarmStack
+		if _, exists := stacks[stack]; exists {
+			delete(stacks, stack)
+		}
+
+		newStackStatus[stack] = &StackStatus{}
+		newStackStatus[stack].RepoURL = stackRepo.url
+		if _, exists := stackStatus[stack]; exists {
+			delete(stacks, stack)
+		}
 	}
+
+	if len(stacks) != 0 {
+		logger.Info(fmt.Sprintf("Some stacks were removed: %v", stacks))
+		// Todo: do we need to do something for this.
+	}
+
+	stacks = newStacks
+	stackStatus = newStackStatus
+
 	return nil
 }
 
