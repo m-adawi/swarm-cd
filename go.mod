@@ -7,6 +7,7 @@ require (
 	github.com/getsops/sops/v3 v3.9.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/goccy/go-yaml v1.12.0
+	github.com/hashicorp/vault/api v1.14.0
 	github.com/samber/slog-gin v1.13.3
 	github.com/spf13/viper v1.19.0
 )

@@ -25,3 +25,12 @@ stacks:
 
 # The WEB UI address
 address: 0.0.0.0:8080
+
+# The Vault address
+vault_address: ""
+
+# The Vault Token
+vault_token: ""
+
+# The Vault Namespace (for enterprise)
+vault_namespace: ""

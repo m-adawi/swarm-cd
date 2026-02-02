@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path"
+	"strings"
 	"text/template"
 
 	"github.com/docker/cli/cli/command/stack"
@@ -69,6 +70,20 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		return
 	}
 
+	//log.Debug("resolving Vault secrets...")
+	//err = swarmStack.resolveVaultSecrets(stackContents)
+	//if err != nil {
+	//	return "", fmt.Errorf("failed to resolve Vault secrets for %s stack: %w", swarmStack.name, err)
+	//}
+
+	if config.VaultAddress != "" {
+		log.Debug("resolving Vault secrets...")
+		err = swarmStack.resolveVaultSecrets(stackContents)
+		if err != nil {
+			return "", fmt.Errorf("failed to resolve Vault secrets for %s stack: %w", swarmStack.name, err)
+		}
+	}
+
 	log.Debug("decrypting secrets...")
 	err = swarmStack.decryptSopsFiles(stackContents)
 	if err != nil {
@@ -90,6 +105,70 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	log.Debug("deploying stack...")
 	err = swarmStack.deployStack()
 	return
+}
+
+func (swarmStack *swarmStack) resolveVaultSecrets(composeMap map[string]any) error {
+	services, ok := composeMap["services"].(map[string]any)
+	if !ok {
+		return nil
+	}
+
+	for serviceName, svc := range services {
+		svcMap, ok := svc.(map[string]any)
+		if !ok {
+			return fmt.Errorf("invalid compose file: service %s must be a map", serviceName)
+		}
+
+		// environment can be either:
+		// - map: environment: { KEY: value }
+		// - list: environment: [ "KEY=value", ... ]
+		env, ok := svcMap["environment"]
+		if !ok {
+			continue
+		}
+
+		switch typed := env.(type) {
+		case map[string]any:
+			for k, v := range typed {
+				strVal, ok := v.(string)
+				if !ok {
+					continue
+				}
+				resolved, isVaultRef, err := util.ResolveVaultReferenceKVv2(strVal)
+				if err != nil {
+					return fmt.Errorf("service %s env %s: %w", serviceName, k, err)
+				}
+				if isVaultRef {
+					typed[k] = resolved
+				}
+			}
+		case []any:
+			for i, item := range typed {
+				strItem, ok := item.(string)
+				if !ok {
+					continue
+				}
+				parts := strings.SplitN(strItem, "=", 2)
+				if len(parts) != 2 {
+					continue
+				}
+				key := parts[0]
+				val := parts[1]
+				resolved, isVaultRef, err := util.ResolveVaultReferenceKVv2(val)
+				if err != nil {
+					return fmt.Errorf("service %s env %s: %w", serviceName, key, err)
+				}
+				if isVaultRef {
+					typed[i] = key + "=" + resolved
+				}
+			}
+		default:
+			// unknown env format, ignore
+			continue
+		}
+	}
+
+	return nil
 }
 
 func (swarmStack *swarmStack) readStack() ([]byte, error) {
