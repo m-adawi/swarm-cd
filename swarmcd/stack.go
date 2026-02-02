@@ -70,12 +70,6 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		return
 	}
 
-	//log.Debug("resolving Vault secrets...")
-	//err = swarmStack.resolveVaultSecrets(stackContents)
-	//if err != nil {
-	//	return "", fmt.Errorf("failed to resolve Vault secrets for %s stack: %w", swarmStack.name, err)
-	//}
-
 	if config.VaultAddress != "" {
 		log.Debug("resolving Vault secrets...")
 		err = swarmStack.resolveVaultSecrets(stackContents)
@@ -119,9 +113,6 @@ func (swarmStack *swarmStack) resolveVaultSecrets(composeMap map[string]any) err
 			return fmt.Errorf("invalid compose file: service %s must be a map", serviceName)
 		}
 
-		// environment can be either:
-		// - map: environment: { KEY: value }
-		// - list: environment: [ "KEY=value", ... ]
 		env, ok := svcMap["environment"]
 		if !ok {
 			continue

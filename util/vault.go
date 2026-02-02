@@ -11,14 +11,6 @@ import (
 
 var vaultClient *vaultapi.Client
 
-// InitVault initializes a shared Vault client.
-// If vault_address is empty, Vault integration is disabled (no-op).
-//
-// Token resolution order:
-// - config.yaml: vault_token
-// - env: VAULT_TOKEN
-//
-// Namespace is optional (vault_namespace).
 func InitVault() error {
 	if Configs.VaultAddress == "" {
 		Logger.Info("Vault integration disabled (vault_address is empty)")
@@ -51,15 +43,6 @@ func InitVault() error {
 	return nil
 }
 
-// ResolveVaultReferenceKVv2 resolves a reference in the form:
-//   vault:<path>#<key>
-//
-// Examples:
-//   vault:secret/data/myapp/db#password
-//
-// It is KV v2 aware: if response contains "data" object, it reads keys from it.
-// Returns (resolvedValue, true, nil) if it was a vault reference.
-// Returns ("", false, nil) if the input is not a vault reference.
 func ResolveVaultReferenceKVv2(ref string) (string, bool, error) {
 	if !strings.HasPrefix(ref, "vault:") {
 		return "", false, nil
