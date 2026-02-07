@@ -8,8 +8,7 @@ on:
       - "go.sum"
       - "ui/**"
       - "Dockerfile"
-  workflow_dispatch:  
-
+  workflow_dispatch:
 
 jobs:
   docker:
@@ -26,32 +25,24 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Docker
-        uses: docker/setup-docker-action@v4
-        with:
-          daemon-config: |
-            {
-              "debug": true,
-              "features": {
-                "containerd-snapshotter": true
-              }
-            }
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v3
 
-      - name: Build docker image
+      - name: Build docker image (test build)
         uses: docker/build-push-action@v6
         with:
-          load: true
+          push: false
           platforms: linux/amd64,linux/arm64
 
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v4
         id: release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
-            
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Login to Docker registry
         uses: docker/login-action@v3
         if: ${{ github.ref_name == 'main' }}
@@ -66,12 +57,13 @@ jobs:
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      
+
       - name: Push docker image
         uses: docker/build-push-action@v6
         if: ${{ github.ref_name == 'main' && steps.release.outputs.new_release_published == 'true' }}
         with:
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: |
             ${{ vars.DOCKERHUB_USERNAME }}/swarm-cd:latest
             ${{ vars.DOCKERHUB_USERNAME }}/swarm-cd:${{ steps.release.outputs.new_release_version }}
