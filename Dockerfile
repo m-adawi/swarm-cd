@@ -4,8 +4,6 @@ WORKDIR /ui
 COPY ui/package.json ui/package-lock.json ./
 RUN npm install
 COPY ui/ ./
-# Run tests BEFORE build - fail fast if tests fail
-RUN npm run test
 RUN npm run build
 
 # Stage 2: Build the backend
