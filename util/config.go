@@ -3,6 +3,7 @@ package util
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/spf13/viper"
 )
@@ -37,18 +38,20 @@ type Config struct {
 var Configs Config
 
 func LoadConfigs() (err error) {
-	err = readConfig()
+	configsPath := getConfigsPath()
+	Logger.Info(fmt.Sprintf("[Configs] path: %s", configsPath))
+	err = readConfig(configsPath)
 	if err != nil {
 		return fmt.Errorf("could not read configuration file: %w", err)
 	}
 	if Configs.RepoConfigs == nil {
-		err = readRepoConfigs()
+		err = readRepoConfigs(configsPath)
 		if err != nil {
 			return fmt.Errorf("could not read repos file: %w", err)
 		}
 	}
 	if Configs.StackConfigs == nil {
-		err = readStackConfigs()
+		err = readStackConfigs(configsPath)
 		if err != nil {
 			return fmt.Errorf("could not load stacks file: %w", err)
 		}
@@ -56,12 +59,19 @@ func LoadConfigs() (err error) {
 	return validateConfig()
 }
 
+func getConfigsPath() string {
+	if path := os.Getenv("CONFIGS_PATH"); path != "" {
+		return path
+	}
+	return "."
+}
+
 const defaultWorkers = 3
 
-func readConfig() (err error) {
+func readConfig(path string) (err error) {
 	configViper := viper.New()
 	configViper.SetConfigName("config")
-	configViper.AddConfigPath(".")
+	configViper.AddConfigPath(path)
 	configViper.SetDefault("update_interval", 120)
 	configViper.SetDefault("concurrency", defaultWorkers)
 	configViper.SetDefault("repos_path", "repos")
@@ -75,10 +85,10 @@ func readConfig() (err error) {
 	return configViper.Unmarshal(&Configs)
 }
 
-func readRepoConfigs() (err error) {
+func readRepoConfigs(path string) (err error) {
 	reposViper := viper.New()
 	reposViper.SetConfigName("repos")
-	reposViper.AddConfigPath(".")
+	reposViper.AddConfigPath(path)
 	err = reposViper.ReadInConfig()
 	if err != nil {
 		return
@@ -86,10 +96,10 @@ func readRepoConfigs() (err error) {
 	return reposViper.Unmarshal(&Configs.RepoConfigs)
 }
 
-func readStackConfigs() (err error) {
+func readStackConfigs(path string) (err error) {
 	stacksViper := viper.New()
 	stacksViper.SetConfigName("stacks")
-	stacksViper.AddConfigPath(".")
+	stacksViper.AddConfigPath(path)
 	err = stacksViper.ReadInConfig()
 	if err != nil {
 		return
