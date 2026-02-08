@@ -26,6 +26,7 @@ type RepoConfig struct {
 type Config struct {
 	ReposPath            string                  `mapstructure:"repos_path"`
 	UpdateInterval       int                     `mapstructure:"update_interval"`
+	Concurrency          int                     `mapstructure:"concurrency"`
 	AutoRotate           bool                    `mapstructure:"auto_rotate"`
 	StackConfigs         map[string]*StackConfig `mapstructure:"stacks"`
 	RepoConfigs          map[string]*RepoConfig  `mapstructure:"repos"`
@@ -52,14 +53,17 @@ func LoadConfigs() (err error) {
 			return fmt.Errorf("could not load stacks file: %w", err)
 		}
 	}
-	return
+	return validateConfig()
 }
+
+const defaultWorkers = 3
 
 func readConfig() (err error) {
 	configViper := viper.New()
 	configViper.SetConfigName("config")
 	configViper.AddConfigPath(".")
 	configViper.SetDefault("update_interval", 120)
+	configViper.SetDefault("concurrency", defaultWorkers)
 	configViper.SetDefault("repos_path", "repos")
 	configViper.SetDefault("auto_rotate", true)
 	configViper.SetDefault("sops_secrets_discovery", false)
@@ -91,4 +95,12 @@ func readStackConfigs() (err error) {
 		return
 	}
 	return stacksViper.Unmarshal(&Configs.StackConfigs)
+}
+
+func validateConfig() error {
+	if Configs.Concurrency <= 0 {
+		Logger.Warn(fmt.Sprintf("Invalid `config.Concurrency value`, using default: %v", defaultWorkers))
+		Configs.Concurrency = defaultWorkers
+	}
+	return nil
 }

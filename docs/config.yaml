@@ -4,6 +4,11 @@
 # waits everytime before pulling 
 update_interval: 120
 
+# The amount of parallel threads for deploying stacks.
+# The sensible value depends on the setup to prevent
+# the swarm manager from overloading.
+concurrency: 3
+
 # The path where SwarmCD will checkout repos
 repos_path: repos/
 
