@@ -1,8 +1,8 @@
-# SwarmCD stacks configuration refernce 
+# SwarmCD stacks configuration refernce
 # This file should contain all the stacks
-# that you want swarm-cd to keep synching 
+# that you want swarm-cd to keep synching
 
-# Name of the stack, it will be used in 
+# Name of the stack, it will be used in
 # the stack deploy command as the stack name
 stack-name:
   # The repo that contain the stack compose file
@@ -16,7 +16,7 @@ stack-name:
   compose_file: /path/to/compose.yaml
   # Path to values file to use when rendering
   # compose file as a Go template. If empty, compose
-  # file will be treated as a regular compose file 
+  # file will be treated as a regular compose file
   values_file: /path/to/values.yaml
   # Paths to files encrypted using sops to decrypt
   # before updating stack
@@ -25,3 +25,8 @@ stack-name:
   # Enable the automatic secret discovery
   # alternative to sops_files
   sops_secrets_discovery: false
+  # Override the global always_pull_containers setting
+  # for this specific stack. When not set, uses the global
+  # default. When set to true, always pulls new images.
+  # When set to false, only pulls when images tags change in the stack file.
+  always_pull_containers: false

@@ -57,6 +57,34 @@ docker stack deploy --compose-file docker-compose.yaml swarm-cd
 This will start SwarmCD, it will periodically check the stack repo
 for new changes, pulling them and updating the stack.
 
+## Change Configuration directory location
+
+By default, SwarmCD looks for configuration files in the current working directory
+(`.`, that translates to `/app` in the docker container).  
+You can change this location by setting the `CONFIGS_PATH` environment variable.
+
+Using this, you can then specify a single folder in the `volumes` section.
+
+```yaml
+# docker-compose.yaml
+version: '3.7'
+services:
+  swarm-cd:
+    image: ghcr.io/m-adawi/swarm-cd:latest
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./configs:/app/configs:ro
+    environment:
+      - CONFIGS_PATH=/app/configs
+```
+
+> **NOTE:** due to how Docker Swarm works, it is better to use configs instead of bind mounts.
+  But if you only have a single manager node, it's OK to use this feature.
+
 ## Manage Encrypted Secrets Using SOPS
 
 You can use [sops](https://github.com/getsops/sops) to encrypt secrets in git repos and

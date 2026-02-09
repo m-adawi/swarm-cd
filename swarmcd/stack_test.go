@@ -8,7 +8,7 @@ import (
 // External objects are ignored by the rotation
 func TestRotateExternalObjects(t *testing.T) {
 	repo := &stackRepo{name: "test", path: "test", url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
-	stack := newSwarmStack("test", repo, "main", "docker-compose.yaml", nil, "", false)
+	stack := newSwarmStack("test", repo, "main", "docker-compose.yaml", nil, "", false, nil)
 	objects := map[string]any{
 		"my-secret": map[string]any{"external": true},
 	}
@@ -21,7 +21,7 @@ func TestRotateExternalObjects(t *testing.T) {
 // Secrets are discovered, external secrets are ignored
 func TestSecretDiscovery(t *testing.T) {
 	repo := &stackRepo{name: "test", path: "test", url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
-	stack := newSwarmStack("test", repo, "main", "stacks/docker-compose.yaml", nil, "", false)
+	stack := newSwarmStack("test", repo, "main", "stacks/docker-compose.yaml", nil, "", false, nil)
 	stackString := []byte(`services:
   my-service:
     image: my-image
