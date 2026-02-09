@@ -15,25 +15,40 @@ import (
 )
 
 type swarmStack struct {
-	name            string
-	repo            *stackRepo
-	branch          string
-	composePath     string
-	sopsFiles       []string
-	valuesFile      string
-	discoverSecrets bool
+	name                 string
+	repo                 *stackRepo
+	branch               string
+	composePath          string
+	sopsFiles            []string
+	valuesFile           string
+	discoverSecrets      bool
+	alwaysPullContainers *bool
 }
 
-func newSwarmStack(name string, repo *stackRepo, branch string, composePath string, sopsFiles []string, valuesFile string, discoverSecrets bool) *swarmStack {
+func newSwarmStack(name string, repo *stackRepo, branch string, composePath string, sopsFiles []string, valuesFile string, discoverSecrets bool, alwaysPullContainers *bool) *swarmStack {
 	return &swarmStack{
-		name:            name,
-		repo:            repo,
-		branch:          branch,
-		composePath:     composePath,
-		sopsFiles:       sopsFiles,
-		valuesFile:      valuesFile,
-		discoverSecrets: discoverSecrets,
+		name:                 name,
+		repo:                 repo,
+		branch:               branch,
+		composePath:          composePath,
+		sopsFiles:            sopsFiles,
+		valuesFile:           valuesFile,
+		discoverSecrets:      discoverSecrets,
+		alwaysPullContainers: alwaysPullContainers,
 	}
+}
+
+func newSwarmStackFromConfig(name string, repo *stackRepo, stackConfig *util.StackConfig, globalSecretsDiscovery bool) *swarmStack {
+	return newSwarmStack(
+		name,
+		repo,
+		stackConfig.Branch,
+		stackConfig.ComposeFile,
+		stackConfig.SopsFiles,
+		stackConfig.ValuesFile,
+		globalSecretsDiscovery || stackConfig.SopsSecretsDiscovery,
+		stackConfig.AlwaysPullContainers,
+	)
 }
 
 func (swarmStack *swarmStack) updateStack() (revision string, err error) {
@@ -242,10 +257,22 @@ func (swarmStack *swarmStack) writeStack(composeMap map[string]any) error {
 }
 
 func (swarmStack *swarmStack) deployStack() error {
+	// Determine effective alwaysPullContainers value
+	// Stack-level override takes precedence, fallback to global setting
+	alwaysPull := config.AlwaysPullContainers
+	if swarmStack.alwaysPullContainers != nil {
+		alwaysPull = *swarmStack.alwaysPullContainers
+	}
+	resolveImage := "changed"
+	if alwaysPull {
+		resolveImage = "always"
+	}
+
 	cmd := stack.NewStackCommand(dockerCli)
 	cmd.SetArgs([]string{
-		"deploy", "--detach", "--with-registry-auth", "-c",
-		path.Join(swarmStack.repo.path, swarmStack.composePath),
+		"deploy", "--detach", "--with-registry-auth",
+		"--resolve-image", resolveImage,
+		"-c", path.Join(swarmStack.repo.path, swarmStack.composePath),
 		swarmStack.name,
 	})
 	// To stop printing errors and

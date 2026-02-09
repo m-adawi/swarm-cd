@@ -15,6 +15,7 @@ type StackConfig struct {
 	ValuesFile           string   `mapstructure:"values_file"`
 	SopsFiles            []string `mapstructure:"sops_files"`
 	SopsSecretsDiscovery bool     `mapstructure:"sops_secrets_discovery"`
+	AlwaysPullContainers *bool    `mapstructure:"always_pull_containers"`
 }
 
 type RepoConfig struct {
@@ -33,6 +34,7 @@ type Config struct {
 	RepoConfigs          map[string]*RepoConfig  `mapstructure:"repos"`
 	SopsSecretsDiscovery bool                    `mapstructure:"sops_secrets_discovery"`
 	Address              string                  `mapstructure:"address"`
+	AlwaysPullContainers bool                    `mapstructure:"always_pull_containers"`
 }
 
 var Configs Config
@@ -77,6 +79,7 @@ func readConfig(path string) (err error) {
 	configViper.SetDefault("repos_path", "repos")
 	configViper.SetDefault("auto_rotate", true)
 	configViper.SetDefault("sops_secrets_discovery", false)
+	configViper.SetDefault("always_pull_containers", false)
 	configViper.SetDefault("address", "0.0.0.0:8080")
 	err = configViper.ReadInConfig()
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
