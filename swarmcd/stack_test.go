@@ -8,7 +8,7 @@ import (
 // Non-file objects are ignored by the rotation
 func TestRotateObjectsWithoutFile(t *testing.T) {
 	repo := &stackRepo{name: "test", path: "test", url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
-	stack := newSwarmStack("test", repo, "main", "docker-compose.yaml", nil, "", false)
+	stack := newSwarmStack("test", repo, "main", "docker-compose.yaml", nil, "", false, nil)
 	objects := map[string]any{
 		"my-secret": map[string]any{"external": true},
 		"my-plugin-external-secret": map[string]any{
@@ -24,8 +24,13 @@ func TestRotateObjectsWithoutFile(t *testing.T) {
 // Secrets are discovered, external secrets are ignored
 func TestSecretDiscovery(t *testing.T) {
 	repo := &stackRepo{name: "test", path: "test", url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
-	stack := newSwarmStack("test", repo, "main", "stacks/docker-compose.yaml", nil, "", false)
-	stackString := []byte(`
+	stack := newSwarmStack("test", repo, "main", "stacks/docker-compose.yaml", nil, "", false, nil)
+	stackString := []byte(`services:
+  my-service:
+    image: my-image
+    secrets:
+      - my-secret
+      - my-external-secret
 secrets:
   my-secret:
     file: secrets/secret.yaml
