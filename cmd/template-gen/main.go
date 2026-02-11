@@ -38,14 +38,24 @@ func main() {
 		if err != nil {
 			log.Fatal("Could not parse config file: ", err)
 		}
+		if util.Configs.GlobalValues != nil && util.Configs.GlobalValuesPath != "" {
+			log.Print("Both global_values and global_values_path provided, ignoring global_values_path")
+			util.Configs.GlobalValuesPath = ""
+		} else if util.Configs.GlobalValuesPath != "" {
+			log.Print("Using global_values_path from config")
+			err = util.ReadGlobalValues(util.Configs.GlobalValuesPath)
+			if err != nil {
+				log.Fatal("Could not parse global file: ", err)
+			}
+		}
 		globalValuesMap = util.Configs.GlobalValues
 	} else if globalPath != "" {
-		globalValuesMap, err = util.ParseValuesFile(globalPath, "global")
+		err = util.ReadGlobalValues(globalPath)
 		if err != nil {
 			log.Fatal("Could not parse global file: ", err)
 		}
+		globalValuesMap = util.Configs.GlobalValues
 	}
-
 
 	outputFile := "-"
 	if len(flag.Args()) > 1 {
@@ -72,7 +82,7 @@ func main() {
 		fmt.Println(string(stackBytes))
 
 	} else {
-		err = os.WriteFile(outputFile, stackBytes, 0666)
+		err = os.WriteFile(outputFile, stackBytes, 0600)
 		if err != nil {
 			log.Fatal("Could not write file ", outputFile, ": ", err)
 		}

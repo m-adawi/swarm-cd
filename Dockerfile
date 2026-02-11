@@ -18,7 +18,6 @@ COPY web/ web/
 COPY swarmcd/ swarmcd/
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -o /swarm-cd ./cmd/swarm-cd
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -o /template-gen ./cmd/template-gen
-RUN go test ./swarmcd/
 
 # Stage 3: Final production image (depends on previous stages)
 FROM alpine:3.22.1

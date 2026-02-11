@@ -166,7 +166,7 @@ services:
 
 ### Defining global variables
 
-Variables can be defined for all stack in a `global_values.yaml` file, or directly in the `config.yaml` file using the `global_values` field.
+Variables can be defined for all stacks in a `global_values.yaml` file, or directly in the `config.yaml` file using the `global_values` field.
 
 They can be overriden using a stack value file.
 
@@ -225,9 +225,9 @@ volumes:
 
 ### Testing template generation
 
-For debugging purpose, you can generate your compose without a running instance of swarm-cd. For that, you can call `/app/template-gen, available in the docker image. For example:
+For debugging purpose, you can generate your compose without a running instance of swarm-cd. For that, you can call `/app/template-gen` tool, available in the docker image. For example:
 ``` sh
-docker run -v $(pwd)/testdata:/data --rm -it ghcr.io/m-adawi/swarm-cd:latest /app/template-gen --valuefile /data/values.yml /data/compose.yml out.yaml
+docker run -v $(pwd)/testdata:/data --rm -it --entrypoint="" ghcr.io/m-adawi/swarm-cd:latest /app/template-gen --valuefile /data/values.yml /data/compose.yml out.yaml
 ```
 For a list of all available flags, use the `--help` flag.
 

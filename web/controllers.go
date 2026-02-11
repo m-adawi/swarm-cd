@@ -31,11 +31,13 @@ func getCompose(ctx *gin.Context) {
 	swarmStack, err := swarmcd.GetSwarmStack(stackName)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 	
 	stackBytes, err := swarmStack.ReadStack()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 	ctx.String(200, string(stackBytes))
 }
@@ -45,11 +47,13 @@ func getRendered(ctx *gin.Context) {
 	swarmStack, err := swarmcd.GetSwarmStack(stackName)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 	
 	stackBytes, err := swarmStack.GenerateStack()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 	ctx.String(200, string(stackBytes))
 }

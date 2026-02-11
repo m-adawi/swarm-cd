@@ -3,6 +3,7 @@ package swarmcd
 import (
 	"bytes"
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -31,12 +32,19 @@ type swarmStack struct {
 }
 
 func NewSwarmStack(name string, repo *stackRepo, branch string, composePath string, sopsFiles []string, valuesFile string, discoverSecrets bool, globalValuesMap map[string]any, templateFolder string) *swarmStack {
+	log := logger.With(
+		slog.String("stack", name),
+		slog.String("branch", branch),
+	)
 	if repo != nil {
 		templateFolder = path.Join(repo.path, templateFolder)
 	}
 
 	_, err := os.Stat(templateFolder)
 	if err != nil {
+		if errors.Is(err, os.ErrPermission) {
+			log.Error("Cannot access template folder due to permission", "err", err, "folder", templateFolder)
+		}
 		templateFolder = ""
 	}
 
@@ -71,7 +79,12 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	if err != nil {
 		return
 	}
-	stackStatus[swarmStack.name].Templated = swarmStack.templated
+
+	status, exists := stackStatus[swarmStack.name]
+	if !exists {
+		return "", fmt.Errorf("Stack %s exists, but it has no status.", swarmStack.name)
+	}
+	status.Templated = swarmStack.templated
 
 	log.Debug("parsing stack content...")
 	stackContents, err := swarmStack.parseStackString([]byte(stackBytes))
@@ -126,7 +139,7 @@ func (swarmStack *swarmStack) GenerateStack() (stackBytes []byte, err error) {
 			valuesFile = path.Join(swarmStack.repo.path, swarmStack.valuesFile)
 		}
 		var valuesMap map[string]any
-		valuesMap, err = util.ParseValuesFile(valuesFile, swarmStack.name + " stack")
+		valuesMap, err = parseValuesFile(valuesFile, swarmStack.name + " stack")
 		if err != nil {
 			return
 		}
@@ -150,7 +163,7 @@ func (swarmStack *swarmStack) GenerateStack() (stackBytes []byte, err error) {
 		pattern := path.Join(swarmStack.templateFolder, "*.tmpl")
 		filenames, err := filepath.Glob(pattern)
 		if err == nil {
-			if len(filenames) != 0 {
+			if filenames != nil {
 				_, err = templ.ParseFiles(filenames...)
 			} else {
 				log.Debug("Skipping, folder empty", "folder", swarmStack.templateFolder)
@@ -317,4 +330,17 @@ func (swarmStack *swarmStack) deployStack() error {
 		return fmt.Errorf("could not deploy stack %s: %s", swarmStack.name, err)
 	}
 	return nil
+}
+
+func parseValuesFile(valuesFile string, source string) (map[string]any, error){
+        valuesBytes, err := os.ReadFile(valuesFile)
+        if err != nil {
+                return nil, fmt.Errorf("could not read %s values file: %w", source, err)
+	}
+	var valuesMap map[string]any
+	err = yaml.Unmarshal(valuesBytes, &valuesMap)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse yaml from values file: %w", err)
+	}
+	return valuesMap, nil
 }

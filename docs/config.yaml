@@ -30,3 +30,9 @@ address: 0.0.0.0:8080
 # you can define global values here instead of global_values.yaml file
 # They can be overriden in the values file at stack level.
 global_values:
+
+
+# You can also override default path for repos, stacks and global_values files
+repos_path:
+stacks_path:
+global_value_path:
