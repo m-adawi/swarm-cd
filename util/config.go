@@ -2,9 +2,7 @@ package util
 
 import (
 	"errors"
-	"path/filepath"
 	"fmt"
-	"log/slog"
 
 	"github.com/spf13/viper"
 )
@@ -30,46 +28,33 @@ type Config struct {
 	UpdateInterval       int                     `mapstructure:"update_interval"`
 	AutoRotate           bool                    `mapstructure:"auto_rotate"`
 	StackConfigs         map[string]*StackConfig `mapstructure:"stacks"`
-	StackConfigsPath     string                  `mapstructure:"stacks_path"`
 	RepoConfigs          map[string]*RepoConfig  `mapstructure:"repos"`
-	RepoConfigsPath      string                  `mapstructure:"repos_path"`
 	SopsSecretsDiscovery bool                    `mapstructure:"sops_secrets_discovery"`
 	Address              string                  `mapstructure:"address"`
 	GlobalValues         map[string]any          `mapstructure:"global_values"`
-	GlobalValuesPath     string                  `mapstructure:"global_values_path"`
 }
 
 var Configs Config
-var ConfigDir string
 
 func LoadConfigs() (err error) {
 	err = ReadConfig("")
 	if err != nil {
 		return fmt.Errorf("could not read configuration file: %w", err)
 	}
-	if Configs.RepoConfigs != nil && Configs.RepoConfigsPath != "" {
-		slog.Warn("Both repos and repos_path provided, ignoring repos_path.")
-		Configs.RepoConfigsPath = ""
-	} else if Configs.RepoConfigs == nil {
-		err = readRepoConfigs(Configs.RepoConfigsPath)
+	if Configs.RepoConfigs == nil {
+		err = readRepoConfigs()
 		if err != nil {
 			return fmt.Errorf("could not read repos file: %w", err)
 		}
 	}
-	if Configs.StackConfigs != nil && Configs.StackConfigsPath != "" {
-		slog.Warn("Both stacks and stacks_path provided, ignoring stacks_path.")
-		Configs.StackConfigsPath = ""
-	} else if Configs.StackConfigs == nil {
-		err = readStackConfigs(Configs.StackConfigsPath)
+	if Configs.StackConfigs == nil {
+		err = readStackConfigs()
 		if err != nil {
 			return fmt.Errorf("could not load stacks file: %w", err)
 		}
 	}
-	if Configs.GlobalValues != nil && Configs.GlobalValuesPath != "" {
-		slog.Warn("Both global_values and global_values_path provided, ignoring global_values_path.")
-		Configs.GlobalValuesPath = ""
-	} else if Configs.GlobalValues == nil {
-		err = ReadGlobalValues(Configs.GlobalValuesPath)
+	if Configs.GlobalValues == nil {
+		err = ReadGlobalValues("")
 		if err != nil {
 			return fmt.Errorf("could not load global values file: %w", err)
 		}
@@ -93,25 +78,13 @@ func ReadConfig(configPath string) (err error) {
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
 		return
 	}
-	ConfigDir = filepath.Dir(configViper.ConfigFileUsed())
 	return configViper.Unmarshal(&Configs)
 }
 
-func defaultConfigViper(configName string, filePath string) (*viper.Viper){
-	v := viper.New()
-	v.SetConfigName(configName)
-	v.AddConfigPath(ConfigDir)
-	if filePath != "" {
-		if !filepath.IsAbs(filePath) {
-			filePath = filepath.Join(ConfigDir, filePath)
-		}
-		v.SetConfigFile(filePath)
-	}
-	return v
-}
-
-func readRepoConfigs(reposPath string) (err error) {
-	reposViper := defaultConfigViper("repos", reposPath)
+func readRepoConfigs() (err error) {
+	reposViper := viper.New()
+	reposViper.SetConfigName("repos")
+	reposViper.AddConfigPath(".")
 	err = reposViper.ReadInConfig()
 	if err != nil {
 		return
@@ -119,8 +92,10 @@ func readRepoConfigs(reposPath string) (err error) {
 	return reposViper.Unmarshal(&Configs.RepoConfigs)
 }
 
-func readStackConfigs(stacksPath string) (err error) {
-	stacksViper := defaultConfigViper("stacks", stacksPath)
+func readStackConfigs() (err error) {
+	stacksViper := viper.New()
+	stacksViper.SetConfigName("stacks")
+	stacksViper.AddConfigPath(".")
 	err = stacksViper.ReadInConfig()
 	if err != nil {
 		return
@@ -129,7 +104,12 @@ func readStackConfigs(stacksPath string) (err error) {
 }
 
 func ReadGlobalValues(globalPath string) (err error) {
-	globalViper := defaultConfigViper("global_values", globalPath)
+	globalViper := viper.New()
+	globalViper.SetConfigName("global_values")
+	globalViper.AddConfigPath(".")
+	if globalPath != "" {
+		globalViper.SetConfigFile(globalPath)
+	}
 	err = globalViper.ReadInConfig()
 	if err != nil {
 		return

@@ -34,28 +34,28 @@ func main() {
 	var err error
 	var globalValuesMap map[string]any
 	if configPath != "" {
+		if globalPath != "" {
+			log.Print("Provided both config and global, ignoring global.")
+		}
 		err = util.ReadConfig(configPath)
 		if err != nil {
 			log.Fatal("Could not parse config file: ", err)
 		}
-		if util.Configs.GlobalValues != nil && util.Configs.GlobalValuesPath != "" {
-			log.Print("Both global_values and global_values_path provided, ignoring global_values_path")
-			util.Configs.GlobalValuesPath = ""
-		} else if util.Configs.GlobalValuesPath != "" {
-			log.Print("Using global_values_path from config")
-			err = util.ReadGlobalValues(util.Configs.GlobalValuesPath)
-			if err != nil {
-				log.Fatal("Could not parse global file: ", err)
-			}
-		}
 		globalValuesMap = util.Configs.GlobalValues
+		if len(globalValuesMap) == 0 {
+			log.Print("Provided config file, but the global_values  section is empty.")
+		}
 	} else if globalPath != "" {
 		err = util.ReadGlobalValues(globalPath)
 		if err != nil {
 			log.Fatal("Could not parse global file: ", err)
 		}
 		globalValuesMap = util.Configs.GlobalValues
+		if len(globalValuesMap) == 0 {
+			log.Print("Provided global file is empty.")
+		}
 	}
+
 
 	outputFile := "-"
 	if len(flag.Args()) > 1 {
