@@ -12,10 +12,10 @@ import (
 	"path/filepath"
 	"text/template"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/docker/cli/cli/command/stack"
 	"github.com/goccy/go-yaml"
 	"github.com/m-adawi/swarm-cd/util"
-	"github.com/Masterminds/sprig/v3"
 )
 
 type swarmStack struct {
@@ -67,7 +67,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		slog.String("stack", swarmStack.name),
 		slog.String("branch", swarmStack.branch),
 	)
-	
+
 	log.Debug("pulling changes...")
 	revision, err = swarmStack.repo.pullChanges(swarmStack.branch)
 	if err != nil {
@@ -117,7 +117,6 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	return
 }
 
-
 func (swarmStack *swarmStack) GenerateStack() (stackBytes []byte, err error) {
 	log := logger.With(
 		slog.String("stack", swarmStack.name),
@@ -139,13 +138,13 @@ func (swarmStack *swarmStack) GenerateStack() (stackBytes []byte, err error) {
 			valuesFile = path.Join(swarmStack.repo.path, swarmStack.valuesFile)
 		}
 		var valuesMap map[string]any
-		valuesMap, err = parseValuesFile(valuesFile, swarmStack.name + " stack")
+		valuesMap, err = parseValuesFile(valuesFile, swarmStack.name+" stack")
 		if err != nil {
 			return
 		}
 		maps.Copy(mergedValuesMap, valuesMap)
 	}
-	
+
 	if len(mergedValuesMap) == 0 && swarmStack.templateFolder == "" {
 		// No need to continue, this file isn't templated
 		return
@@ -159,7 +158,7 @@ func (swarmStack *swarmStack) GenerateStack() (stackBytes []byte, err error) {
 
 	if swarmStack.templateFolder != "" {
 		log.Debug("Loading template folder...")
-		
+
 		pattern := path.Join(swarmStack.templateFolder, "*.tmpl")
 		filenames, err := filepath.Glob(pattern)
 		if err == nil {
@@ -332,10 +331,10 @@ func (swarmStack *swarmStack) deployStack() error {
 	return nil
 }
 
-func parseValuesFile(valuesFile string, source string) (map[string]any, error){
-        valuesBytes, err := os.ReadFile(valuesFile)
-        if err != nil {
-                return nil, fmt.Errorf("could not read %s values file: %w", source, err)
+func parseValuesFile(valuesFile string, source string) (map[string]any, error) {
+	valuesBytes, err := os.ReadFile(valuesFile)
+	if err != nil {
+		return nil, fmt.Errorf("could not read %s values file: %w", source, err)
 	}
 	var valuesMap map[string]any
 	err = yaml.Unmarshal(valuesBytes, &valuesMap)

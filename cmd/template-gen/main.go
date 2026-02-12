@@ -1,9 +1,9 @@
 package main
 
 import (
-	"log"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/m-adawi/swarm-cd/swarmcd"
@@ -56,7 +56,6 @@ func main() {
 		}
 	}
 
-
 	outputFile := "-"
 	if len(flag.Args()) > 1 {
 		outputFile = flag.Args()[1]
@@ -88,4 +87,3 @@ func main() {
 		}
 	}
 }
-

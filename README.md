@@ -144,6 +144,16 @@ Variables defined in this file can then be accessed in the compose file.
 
 [Sprig](https://masterminds.github.io/sprig/) functions can be used in the compose files.
 
+Assuming a stack defined like so in `stacks.yaml` or in the main config file `config.yaml`:
+```
+mystack:
+  repo: myrepo
+  branch: main
+  compose_file: compose.yml
+  value_file: value_file.yml
+```
+
+With these files on "myrepo":
 ```yaml
 # value_file.yaml
 ---
@@ -161,7 +171,18 @@ services:
     image: foo
     environment:
       MY_VAR: "{{ .Values.myvar }}"
-      MY_LIST: "{{ .Values.mylist | join ":" }}" # == "a:b:c"
+      MY_LIST: "{{ .Values.mylist | join ":" }}"
+```
+
+You get
+```yaml
+# compose.yaml
+services:
+  foo:
+    image: foo
+    environment:
+      MY_VAR: "myvalue"
+      MY_LIST: "a:b:c"
 ```
 
 ### Defining global variables
@@ -170,7 +191,16 @@ Variables can be defined for all stacks in a `global_values.yaml` file, or direc
 
 They can be overriden using a stack value file.
 
+Assuming a stack defined like so in `stacks.yaml` or in the main config file `config.yaml`:
+```
+mystack:
+  repo: myrepo
+  branch: main
+  compose_file: compose.yml
+  value_file: value_file.yml
+```
 
+With these files on "myrepo":
 ```yaml
 # global_values.yaml
 ---
@@ -181,7 +211,7 @@ var_b: fromglobal
 ```yaml
 # value_file.yaml
 ---
-var_b: overriden
+var_b: overridden
 ```
 
 ```yaml
@@ -190,8 +220,20 @@ services:
   foo:
     image: foo
     environment:
-      MY_VAR_A: "{{ .Values.var_a }}" # == fromglobal
-      MY_VAR_B: "{{ .Values.var_b }}" # == overriden
+      MY_VAR_A: "{{ .Values.var_a }}"
+      MY_VAR_B: "{{ .Values.var_b }}"
+```
+
+You get:
+
+```yaml
+# compose.yaml
+services:
+  foo:
+    image: foo
+    environment:
+      MY_VAR_A: "fromglobal"
+      MY_VAR_B: "overridden"
 ```
 
 ### Templating
@@ -221,6 +263,23 @@ services:
 
 volumes:
 {{ template "nfs_volume" (dict "name" "foo") }}
+```
+
+You get:
+```yaml
+# compose.yaml
+services:
+  foo:
+    image: foo
+    volumes:
+      - foo-vol:/etc/foo
+
+volumes:
+  foo-vol:
+    driver_opts:
+      type: nfs
+      o: addr=1.2.3.4,nfsvers=4
+      device: :/path/to/foo
 ```
 
 ### Testing template generation

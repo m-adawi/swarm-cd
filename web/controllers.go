@@ -13,10 +13,10 @@ func getStacks(ctx *gin.Context) {
 	var stacks []map[string]any
 	for k, v := range stacksStatus {
 		stacks = append(stacks, map[string]any{
-			"Name": k,
-			"Error": v.Error,
-			"RepoURL": v.RepoURL,
-			"Revision": v.Revision,
+			"Name":      k,
+			"Error":     v.Error,
+			"RepoURL":   v.RepoURL,
+			"Revision":  v.Revision,
 			"Templated": v.Templated,
 		})
 	}
@@ -33,7 +33,7 @@ func getCompose(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	stackBytes, err := swarmStack.ReadStack()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -49,7 +49,7 @@ func getRendered(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	stackBytes, err := swarmStack.GenerateStack()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

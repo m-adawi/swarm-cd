@@ -12,12 +12,12 @@ import (
 )
 
 type stackRepo struct {
-	name           string
-	lock           *sync.Mutex
-	url            string
-	gitRepoObject  *git.Repository
-	auth           *http.BasicAuth
-	path           string
+	name          string
+	lock          *sync.Mutex
+	url           string
+	gitRepoObject *git.Repository
+	auth          *http.BasicAuth
+	path          string
 }
 
 func newStackRepo(name string, repoPath string, url string, auth *http.BasicAuth) (*stackRepo, error) {
@@ -46,12 +46,12 @@ func newStackRepo(name string, repoPath string, url string, auth *http.BasicAuth
 	}
 
 	return &stackRepo{
-		name:           name,
-		path:           repoPath,
-		url:            url,
-		auth:           auth,
-		lock:           &sync.Mutex{},
-		gitRepoObject:  repo,
+		name:          name,
+		path:          repoPath,
+		url:           url,
+		auth:          auth,
+		lock:          &sync.Mutex{},
+		gitRepoObject: repo,
 	}, nil
 }
 
