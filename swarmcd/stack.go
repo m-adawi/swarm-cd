@@ -138,7 +138,7 @@ func (swarmStack *swarmStack) GenerateStack() (stackBytes []byte, err error) {
 			valuesFile = path.Join(swarmStack.repo.path, swarmStack.valuesFile)
 		}
 		var valuesMap map[string]any
-		valuesMap, err = parseValuesFile(valuesFile, swarmStack.name+" stack")
+		valuesMap, err = ParseValuesFile(valuesFile, swarmStack.name+" stack")
 		if err != nil {
 			return
 		}
@@ -169,7 +169,7 @@ func (swarmStack *swarmStack) GenerateStack() (stackBytes []byte, err error) {
 			}
 		}
 		if err != nil {
-			log.Error("Could not parse templates, trying to generate stack without them.", "error", err)
+			log.Warn("Could not parse templates, trying to generate stack without them.", "error", err)
 		}
 	}
 
@@ -331,7 +331,7 @@ func (swarmStack *swarmStack) deployStack() error {
 	return nil
 }
 
-func parseValuesFile(valuesFile string, source string) (map[string]any, error) {
+func ParseValuesFile(valuesFile string, source string) (map[string]any, error) {
 	valuesBytes, err := os.ReadFile(valuesFile)
 	if err != nil {
 		return nil, fmt.Errorf("could not read %s values file: %w", source, err)

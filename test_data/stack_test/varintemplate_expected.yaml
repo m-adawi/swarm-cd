@@ -1,0 +1,25 @@
+---
+version: '3.8'
+services:
+  foo:
+    image: bor:latest
+    environment:
+      BAR: bar
+      BAZ: baz
+
+volumes:
+  oiglobals:
+    driver_opts:
+      type: nfs
+      o: addr=1.2.3.4,nfsvers=4
+      device: /path/to/oiglobals
+  oivalues:
+    driver_opts:
+      type: nfs
+      o: addr=1.2.3.4,nfsvers=4
+      device: /path/to/oivalues
+  baz:
+    driver_opts:
+      type: nfs
+      o: addr=1.2.3.4,nfsvers=4
+      device: /path/to/baz

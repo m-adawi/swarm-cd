@@ -189,7 +189,7 @@ services:
 
 Variables can be defined for all stacks in a `global_values.yaml` file, or directly in the `config.yaml` file using the `global_values` field.
 
-They can be overriden using a stack value file.
+They can be overridden using a stack value file.
 
 Assuming a stack defined like so in `stacks.yaml` or in the main config file `config.yaml`:
 ```
