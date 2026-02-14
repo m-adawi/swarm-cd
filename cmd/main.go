@@ -12,6 +12,8 @@ import (
 func init() {
 	err := util.LoadConfigs()
 	handleInitError(err)
+	err = util.InitVault()
+	handleInitError(err)
 	err = swarmcd.Init()
 	handleInitError(err)
 }

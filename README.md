@@ -232,6 +232,94 @@ secrets:
 ```
 Note: if running swarmcd as a user other than root, modify the docker config mount path to match.
 
+## Vault integration
+
+Swarm-CD can resolve secrets from HashiCorp Vault (KV v2) and substitute them into environment variables of services before running `docker stack deploy`.
+
+### Configuration
+
+Vault client is configured in `config.yaml`:
+
+```yaml
+vault_address: "https://vault.example.com:8200"
+vault_token: ""          # optional, can be provided via VAULT_TOKEN env var
+vault_namespace: ""      # optional, for Vault Enterprise namespaces
+```
+
+- **`vault_address`**: URL of your Vault server (not secret).
+- **`vault_token`**: read token for Swarm-CD. It is recommended to provide it via the `VAULT_TOKEN` environment variable instead of committing it into git.
+- **`vault_namespace`**: optional Vault namespace. Leave empty if you do not use namespaces. If namespaces are enabled and your API paths look like `/v1/ns1/kv/data/dev`, set `vault_namespace: "ns1"` and keep `kv/data/dev` in the references (do not include the namespace in the path itself).
+
+Token resolution order:
+
+1. `vault_token` from `config.yaml` (if non-empty)
+2. `VAULT_TOKEN` environment variable
+
+### Referencing secrets in compose files
+
+Swarm-CD recognizes special values in environment variables with the following format:
+
+```text
+vault:<path>#<key>
+```
+
+Where:
+
+- `<path>` is the logical Vault path that is used with `GET /v1/<path>`,
+- `<key>` is the field name inside the secret data.
+
+For Vault KV v2, data is usually nested under the `data` field, and Swarm-CD takes this into account automatically.
+
+#### Example
+
+In Vault UI you see a secret available via API path:
+
+```text
+/v1/kv/data/dev
+```
+
+and inside it there is a key:
+
+```text
+CLIENT_SECRET = "s3cr3t-value"
+```
+
+In your compose file you can write:
+
+```yaml
+services:
+  app:
+    environment:
+      AuthSettings__ClientSecret: "vault:kv/data/dev#CLIENT_SECRET"
+```
+
+When Swarm-CD processes the stack:
+
+1. It reads the compose file from git.
+2. Finds the value starting with `vault:`.
+3. Calls Vault at `GET /v1/kv/data/dev`.
+4. Reads the `CLIENT_SECRET` key from the returned data (handling KV v2 layout).
+5. Substitutes the resolved value into the environment variable before deploying the stack.
+
+Environment variables may be declared either as a map:
+
+```yaml
+environment:
+  DB_PASSWORD: "vault:kv/data/dev#DB_PASSWORD"
+```
+
+or as a list:
+
+```yaml
+environment:
+  - DB_PASSWORD=vault:kv/data/dev#DB_PASSWORD
+```
+
+Both forms are supported.
+
+> Note: environment variables in Docker are always strings. Even if a value in Vault is stored as a number, it will be passed to the container as a string, and the application is expected to parse it to the desired type if needed.
+
+
 ## Documentation
 
 See [docs](https://github.com/m-adawi/swarm-cd/blob/main/docs).
