@@ -17,10 +17,11 @@ type StackConfig struct {
 }
 
 type RepoConfig struct {
-	Url          string
-	Username     string
-	Password     string
-	PasswordFile string `mapstructure:"password_file"`
+	Url           string
+	Username      string
+	Password      string
+	PasswordFile  string `mapstructure:"password_file"`
+	TemplatesPath string `mapstructure:"templates_path"`
 }
 
 type Config struct {
@@ -31,12 +32,13 @@ type Config struct {
 	RepoConfigs          map[string]*RepoConfig  `mapstructure:"repos"`
 	SopsSecretsDiscovery bool                    `mapstructure:"sops_secrets_discovery"`
 	Address              string                  `mapstructure:"address"`
+	GlobalValues         map[string]any          `mapstructure:"global_values"`
 }
 
 var Configs Config
 
 func LoadConfigs() (err error) {
-	err = readConfig()
+	err = ReadConfig("")
 	if err != nil {
 		return fmt.Errorf("could not read configuration file: %w", err)
 	}
@@ -52,13 +54,22 @@ func LoadConfigs() (err error) {
 			return fmt.Errorf("could not load stacks file: %w", err)
 		}
 	}
+	if Configs.GlobalValues == nil {
+		err = ReadGlobalValues("")
+		if err != nil {
+			return fmt.Errorf("could not load global values file: %w", err)
+		}
+	}
 	return
 }
 
-func readConfig() (err error) {
+func ReadConfig(configPath string) (err error) {
 	configViper := viper.New()
 	configViper.SetConfigName("config")
 	configViper.AddConfigPath(".")
+	if configPath != "" {
+		configViper.SetConfigFile(configPath)
+	}
 	configViper.SetDefault("update_interval", 120)
 	configViper.SetDefault("repos_path", "repos")
 	configViper.SetDefault("auto_rotate", true)
@@ -75,6 +86,7 @@ func readRepoConfigs() (err error) {
 	reposViper := viper.New()
 	reposViper.SetConfigName("repos")
 	reposViper.AddConfigPath(".")
+	reposViper.SetDefault("templates_path", "")
 	err = reposViper.ReadInConfig()
 	if err != nil {
 		return
@@ -91,4 +103,18 @@ func readStackConfigs() (err error) {
 		return
 	}
 	return stacksViper.Unmarshal(&Configs.StackConfigs)
+}
+
+func ReadGlobalValues(globalPath string) (err error) {
+	globalViper := viper.New()
+	globalViper.SetConfigName("global_values")
+	globalViper.AddConfigPath(".")
+	if globalPath != "" {
+		globalViper.SetConfigFile(globalPath)
+	}
+	err = globalViper.ReadInConfig()
+	if err != nil {
+		return
+	}
+	return globalViper.Unmarshal(&Configs.GlobalValues)
 }

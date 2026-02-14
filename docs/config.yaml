@@ -25,3 +25,8 @@ stacks:
 
 # The WEB UI address
 address: 0.0.0.0:8080
+
+# If you need the same values on every stack (domain names),
+# you can define global values here instead of global_values.yaml file
+# They can be overridden in the values file at stack level.
+global_values:

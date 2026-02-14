@@ -10,17 +10,50 @@ import (
 
 func getStacks(ctx *gin.Context) {
 	stacksStatus := swarmcd.GetStackStatus()
-	var stacks []map[string]string
+	var stacks []map[string]any
 	for k, v := range stacksStatus {
-		stacks = append(stacks, map[string]string{
-			"Name": k,
-			"Error": v.Error,
-			"RepoURL": v.RepoURL,
-			"Revision": v.Revision,
+		stacks = append(stacks, map[string]any{
+			"Name":      k,
+			"Error":     v.Error,
+			"RepoURL":   v.RepoURL,
+			"Revision":  v.Revision,
+			"Templated": v.Templated,
 		})
 	}
 	sort.Slice(stacks, func(i, j int) bool {
-		return stacks[i]["Name"] < stacks[j]["Name"]
+		return stacks[i]["Name"].(string) < stacks[j]["Name"].(string)
 	})
 	ctx.JSON(http.StatusOK, stacks)
+}
+
+func getCompose(ctx *gin.Context) {
+	stackName := ctx.Param("stackName")
+	swarmStack, err := swarmcd.GetSwarmStack(stackName)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	stackBytes, err := swarmStack.ReadStack()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.String(http.StatusOK, string(stackBytes))
+}
+
+func getRendered(ctx *gin.Context) {
+	stackName := ctx.Param("stackName")
+	swarmStack, err := swarmcd.GetSwarmStack(stackName)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	stackBytes, err := swarmStack.GenerateStack()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.String(http.StatusOK, string(stackBytes))
 }

@@ -16,7 +16,8 @@ COPY cmd/ cmd/
 COPY util/ util/
 COPY web/ web/
 COPY swarmcd/ swarmcd/
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -o /swarm-cd ./cmd/
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -o /swarm-cd ./cmd/swarm-cd
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -o /template-gen ./cmd/template-gen
 
 # Stage 3: Final production image (depends on previous stages)
 FROM alpine:3.22.1
@@ -24,6 +25,7 @@ WORKDIR /app
 RUN apk add --no-cache ca-certificates gnupg && update-ca-certificates
 # Copy the built backend binary from the backend build stage
 COPY --from=backend-build /swarm-cd /app/
+COPY --from=backend-build /template-gen /app/
 # Copy the built frontend from the frontend build stage
 COPY --from=frontend-build /ui/dist/ /app/ui/
 # Sets the web server mode to release

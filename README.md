@@ -136,6 +136,171 @@ Please note that:
 - if the global setting is set to `true`, it ignores individual stacks overrides.
 - if the stack-level setting is set to `true`, it ignores the `sops_files` setting altogether.
 
+## Configuring stacks
+
+### Using variables from a value file
+When defining a stack, you can provide a path to a yaml file with variables by setting the `value_file` field.
+Variables defined in this file can then be accessed in the compose file.
+
+[Sprig](https://masterminds.github.io/sprig/) functions can be used in the compose files.
+
+Assuming a stack defined like so in `stacks.yaml` or in the main config file `config.yaml`:
+```
+mystack:
+  repo: myrepo
+  branch: main
+  compose_file: compose.yml
+  value_file: value_file.yml
+```
+
+With these files on "myrepo":
+```yaml
+# value_file.yaml
+---
+myvar: myvalue
+mylist:
+  - a
+  - b
+  - c
+```
+
+```yaml
+# compose.yaml
+services:
+  foo:
+    image: foo
+    environment:
+      MY_VAR: "{{ .Values.myvar }}"
+      MY_LIST: "{{ .Values.mylist | join ":" }}"
+```
+
+You get
+```yaml
+# compose.yaml
+services:
+  foo:
+    image: foo
+    environment:
+      MY_VAR: "myvalue"
+      MY_LIST: "a:b:c"
+```
+
+### Defining global variables
+
+Variables can be defined for all stacks in a `global_values.yaml` file, or directly in the `config.yaml` file using the `global_values` field.
+
+They can be overridden using a stack value file.
+
+Assuming a stack defined like so in `stacks.yaml` or in the main config file `config.yaml`:
+```
+mystack:
+  repo: myrepo
+  branch: main
+  compose_file: compose.yml
+  value_file: value_file.yml
+```
+
+With these files on "myrepo":
+```yaml
+# global_values.yaml
+---
+var_a: fromglobal
+var_b: fromglobal
+```
+
+```yaml
+# value_file.yaml
+---
+var_b: overridden
+```
+
+```yaml
+# compose.yaml
+services:
+  foo:
+    image: foo
+    environment:
+      MY_VAR_A: "{{ .Values.var_a }}"
+      MY_VAR_B: "{{ .Values.var_b }}"
+```
+
+You get:
+
+```yaml
+# compose.yaml
+services:
+  foo:
+    image: foo
+    environment:
+      MY_VAR_A: "fromglobal"
+      MY_VAR_B: "overridden"
+```
+
+### Templating
+
+Templates enables users to incorporate generic pieces of compose files into their stacks definitions.
+This functionality is activated by specifying the `templates_path` variable in the repository configuration (in `repos.yaml` or `config.yaml`).
+Swarmcd will then read any file in the specified folder with the `.tmpl` extension.
+For a syntax breakdown, see the [official go documentation](https://pkg.go.dev/text/template).
+
+They can be used in stacks files like so:
+
+```yaml
+# repos.yaml
+myrepo:
+  url: "https://my.repo"
+  templates_path: template
+```
+
+```yaml
+# template/storage.tmpl
+
+{{- define "nfs_volume"  }}
+  {{ .name }}-vol:
+    driver_opts:
+      type: nfs
+      o: addr=1.2.3.4,nfsvers=4
+      device: :/path/to/{{ .name }}
+{{- end }}
+```
+
+```yaml
+# compose.yaml
+services:
+  foo:
+    image: foo
+    volumes:
+      - foo-vol:/etc/foo
+
+volumes:
+{{ template "nfs_volume" (dict "name" "foo") }}
+```
+
+You get:
+```yaml
+# compose.yaml
+services:
+  foo:
+    image: foo
+    volumes:
+      - foo-vol:/etc/foo
+
+volumes:
+  foo-vol:
+    driver_opts:
+      type: nfs
+      o: addr=1.2.3.4,nfsvers=4
+      device: :/path/to/foo
+```
+
+### Testing template generation
+
+For debugging purpose, you can generate your compose without a running instance of swarm-cd. For that, you can call `/app/template-gen` tool, available in the docker image. For example:
+``` sh
+docker run -v $(pwd)/testdata:/data --rm -it --entrypoint="" ghcr.io/m-adawi/swarm-cd:latest /app/template-gen --valuefile /data/values.yml /data/compose.yml out.yaml
+```
+For a list of all available flags, use the `--help` flag.
+
 ## Connect SwarmCD to a remote docker socket
 
 You can use the `DOCKER_HOST` environment variable to point SwarmCD to a remote docker socket,
