@@ -1,6 +1,8 @@
 package web
 
 import (
+	"encoding/json"
+	"errors"
 	"net/http"
 	"sort"
 
@@ -26,31 +28,59 @@ func getStacks(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, stacks)
 }
 
-type webhookRequest struct {
-	Stack string `json:"stack"`
+// StackConfig represents the webhook request payload
+type StackConfig struct {
+	Type  string  `json:"type"`
+	Stack *string `json:"stack"`
+}
+
+// UnmarshalJSON implements custom validation logic
+func (s *StackConfig) UnmarshalJSON(data []byte) error {
+	type Alias StackConfig
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(s),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	if s.Type == "all" && s.Stack != nil {
+		return errors.New("validation error: 'stack' must be undefined when type is 'all'")
+	}
+
+	if s.Type == "stack" && s.Stack == nil {
+		return errors.New("validation error: 'stack' is required when type is 'stack'")
+	}
+
+	return nil
 }
 
 func postWebhook(ctx *gin.Context) {
-	var req webhookRequest
+	var req StackConfig
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		// If no body or invalid JSON, update all stacks
-		req.Stack = ""
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
-	if req.Stack == "" {
+	switch req.Type {
+	case "all":
 		util.Logger.Info("webhook: triggered update for all stacks")
 		swarmcd.UpdateAllStacks()
 		ctx.JSON(http.StatusOK, gin.H{"message": "all stacks update triggered"})
-		return
+	case "stack":
+		util.Logger.Info("webhook: triggered update for stack", "stack", *req.Stack)
+		err := swarmcd.UpdateStack(*req.Stack)
+		if err != nil {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		ctx.JSON(http.StatusOK, gin.H{"message": "stack update triggered", "stack": *req.Stack})
+	default:
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid type: must be 'all' or 'stack'"})
 	}
-
-	util.Logger.Info("webhook: triggered update for stack", "stack", req.Stack)
-	err := swarmcd.UpdateStack(req.Stack)
-	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		return
-	}
-	ctx.JSON(http.StatusOK, gin.H{"message": "stack update triggered", "stack": req.Stack})
 }
 
 func webhookAuthMiddleware() gin.HandlerFunc {

@@ -44,11 +44,22 @@ webhook_key: your-secret-key
 
 ## Usage
 
+The webhook accepts a JSON payload with the following structure:
+
+```json
+{
+  "type": "all" | "stack",
+  "stack": "stack-name"  // required when type is "stack", must be omitted when type is "all"
+}
+```
+
 ### Update All Stacks
 
 ```bash
 curl -X POST http://localhost:8080/webhook \
-  -H "Authorization: Bearer your-secret-key"
+  -H "Authorization: Bearer your-secret-key" \
+  -H "Content-Type: application/json" \
+  -d '{"type": "all"}'
 ```
 
 ### Update a Specific Stack
@@ -57,7 +68,7 @@ curl -X POST http://localhost:8080/webhook \
 curl -X POST http://localhost:8080/webhook \
   -H "Authorization: Bearer your-secret-key" \
   -H "Content-Type: application/json" \
-  -d '{"stack": "my-stack-name"}'
+  -d '{"type": "stack", "stack": "my-stack-name"}'
 ```
 
 ## Response
@@ -90,6 +101,20 @@ or for a specific stack:
 {"error": "webhook not configured"}
 ```
 
+**400 Bad Request** - Invalid request payload:
+
+```json
+{"error": "validation error: 'stack' must be undefined when type is 'all'"}
+```
+
+```json
+{"error": "validation error: 'stack' is required when type is 'stack'"}
+```
+
+```json
+{"error": "invalid type: must be 'all' or 'stack'"}
+```
+
 **404 Not Found** - Stack not found:
 
 ```json
@@ -106,7 +131,7 @@ or for a specific stack:
     curl -X POST ${{ secrets.SWARMCD_URL }}/webhook \
       -H "Authorization: Bearer ${{ secrets.SWARMCD_WEBHOOK_KEY }}" \
       -H "Content-Type: application/json" \
-      -d '{"stack": "my-app"}'
+      -d '{"type": "stack", "stack": "my-app"}'
 ```
 
 ### GitLab CI
@@ -118,7 +143,7 @@ deploy:
       curl -X POST ${SWARMCD_URL}/webhook \
         -H "Authorization: Bearer ${SWARMCD_WEBHOOK_KEY}" \
         -H "Content-Type: application/json" \
-        -d '{"stack": "my-app"}'
+        -d '{"type": "stack", "stack": "my-app"}'
 ```
 
 ## Security Considerations
