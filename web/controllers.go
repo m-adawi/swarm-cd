@@ -39,7 +39,7 @@ func getCompose(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.String(200, string(stackBytes))
+	ctx.String(http.StatusOK, string(stackBytes))
 }
 
 func getRendered(ctx *gin.Context) {
@@ -55,5 +55,5 @@ func getRendered(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.String(200, string(stackBytes))
+	ctx.String(http.StatusOK, string(stackBytes))
 }

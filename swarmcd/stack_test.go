@@ -54,7 +54,6 @@ secrets:
 	}
 }
 
-// This test assume
 func TestStackGeneration(t *testing.T) {
 	type args struct {
 		compose        string

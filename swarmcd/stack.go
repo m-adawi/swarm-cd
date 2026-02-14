@@ -176,7 +176,7 @@ func (swarmStack *swarmStack) GenerateStack() (stackBytes []byte, err error) {
 	var stackContents bytes.Buffer
 	err = templ.Execute(&stackContents, map[string]map[string]any{"Values": mergedValuesMap})
 	if err != nil {
-		return nil, fmt.Errorf("error rending %s stack compose template: %w", swarmStack.name, err)
+		return nil, fmt.Errorf("error rendering %s stack compose template: %w", swarmStack.name, err)
 	}
 	// If there hasn't been any variable replacement, then it's not templated.
 	swarmStack.templated = !bytes.Equal(stackContents.Bytes(), stackBytes)
