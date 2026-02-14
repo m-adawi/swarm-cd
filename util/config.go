@@ -17,10 +17,11 @@ type StackConfig struct {
 }
 
 type RepoConfig struct {
-	Url          string
-	Username     string
-	Password     string
-	PasswordFile string `mapstructure:"password_file"`
+	Url           string
+	Username      string
+	Password      string
+	PasswordFile  string `mapstructure:"password_file"`
+	TemplatesPath string `mapstructure:"templates_path"`
 }
 
 type Config struct {
@@ -85,6 +86,7 @@ func readRepoConfigs() (err error) {
 	reposViper := viper.New()
 	reposViper.SetConfigName("repos")
 	reposViper.AddConfigPath(".")
+	reposViper.SetDefault("templates_path", "")
 	err = reposViper.ReadInConfig()
 	if err != nil {
 		return

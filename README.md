@@ -238,8 +238,19 @@ services:
 
 ### Templating
 
-Templates are automatically imported from the `template` folder. Swarmcd will read any file with the `.tmpl` extension. For a syntax breakdown, see the [official go documentation](https://pkg.go.dev/text/template).
-They can be used in compose files like so:
+Templates enables users to incorporate generic pieces of compose files into their stacks definitions.
+This functionality is activated by specifying the `templates_path` variable in the repository configuration (in `repos.yaml` or `config.yaml`).
+Swarmcd will then read any file in the specified folder with the `.tmpl` extension.
+For a syntax breakdown, see the [official go documentation](https://pkg.go.dev/text/template).
+
+They can be used in stacks files like so:
+
+```yaml
+# repos.yaml
+myrepo:
+  url: "https://my.repo"
+  templates_path: template
+```
 
 ```yaml
 # template/storage.tmpl

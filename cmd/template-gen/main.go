@@ -19,11 +19,11 @@ func init() {
 }
 
 func main() {
-	var valueFile, globalPath, configPath, templateFolder string
+	var valueFile, globalPath, configPath, templatesPath string
 	flag.StringVar(&valueFile, "valuefile", "", "Path to a value file")
 	flag.StringVar(&globalPath, "global", "", "Path to a global value file")
 	flag.StringVar(&configPath, "config", "", "Path to a config file (for globals)")
-	flag.StringVar(&templateFolder, "templatefolder", "", "Path to the template folder")
+	flag.StringVar(&templatesPath, "templatespath", "", "Path to the template folder")
 
 	flag.Parse()
 
@@ -70,8 +70,9 @@ func main() {
 		valueFile,
 		false,
 		globalValuesMap,
-		templateFolder,
 	)
+
+	stack.UpdateTemplatesPath(templatesPath)
 
 	stackBytes, err := stack.GenerateStack()
 	if err != nil {

@@ -12,7 +12,7 @@ import (
 func TestRotateExternalObjects(t *testing.T) {
 	repo := &stackRepo{name: "test", path: "test", url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
 	var valuesMap map[string]any
-	stack := NewSwarmStack("test", repo, "main", "docker-compose.yaml", nil, "", false, valuesMap, "template")
+	stack := NewSwarmStack("test", repo, "main", "docker-compose.yaml", nil, "", false, valuesMap)
 	objects := map[string]any{
 		"my-secret": map[string]any{"external": true},
 	}
@@ -26,7 +26,7 @@ func TestRotateExternalObjects(t *testing.T) {
 func TestSecretDiscovery(t *testing.T) {
 	repo := &stackRepo{name: "test", path: "test", url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
 	var valuesMap map[string]any
-	stack := NewSwarmStack("test", repo, "main", "stacks/docker-compose.yaml", nil, "", false, valuesMap, "template")
+	stack := NewSwarmStack("test", repo, "main", "stacks/docker-compose.yaml", nil, "", false, valuesMap)
 	stackString := []byte(`services:
   my-service:
     image: my-image
@@ -56,10 +56,10 @@ secrets:
 
 func TestStackGeneration(t *testing.T) {
 	type args struct {
-		compose        string
-		valueFile      string
-		globalFile     string
-		templateFolder string
+		compose       string
+		valueFile     string
+		globalFile    string
+		templatesPath string
 	}
 	tests := []struct {
 		name      string
@@ -67,20 +67,20 @@ func TestStackGeneration(t *testing.T) {
 		expected  string
 		templated bool
 	}{
-		{name: "novar", args: args{compose: "basic_compose.yaml", valueFile: "", globalFile: "", templateFolder: ""}, expected: "basic_compose.yaml", templated: false},
-		{name: "novarused", args: args{compose: "basic_compose.yaml", valueFile: "values.yaml", globalFile: "globals.yaml", templateFolder: ""}, expected: "basic_compose.yaml", templated: false},
-		{name: "unusedtemplates", args: args{compose: "basic_compose.yaml", valueFile: "", globalFile: "", templateFolder: "templates"}, expected: "basic_compose.yaml", templated: false},
-		{name: "unusedinvalidtemplates", args: args{compose: "basic_compose.yaml", valueFile: "", globalFile: "", templateFolder: "templates_invalid"}, expected: "basic_compose.yaml", templated: false},
+		{name: "novar", args: args{compose: "basic_compose.yaml", valueFile: "", globalFile: "", templatesPath: ""}, expected: "basic_compose.yaml", templated: false},
+		{name: "novarused", args: args{compose: "basic_compose.yaml", valueFile: "values.yaml", globalFile: "globals.yaml", templatesPath: ""}, expected: "basic_compose.yaml", templated: false},
+		{name: "unusedtemplates", args: args{compose: "basic_compose.yaml", valueFile: "", globalFile: "", templatesPath: "templates"}, expected: "basic_compose.yaml", templated: false},
+		{name: "unusedinvalidtemplates", args: args{compose: "basic_compose.yaml", valueFile: "", globalFile: "", templatesPath: "templates_invalid"}, expected: "basic_compose.yaml", templated: false},
 
-		{name: "varreplacement", args: args{compose: "replacement_compose.yaml", valueFile: "values.yaml", globalFile: "", templateFolder: ""}, expected: "varreplacement_expected.yaml", templated: true},
-		{name: "globalreplacement", args: args{compose: "replacement_compose.yaml", valueFile: "", globalFile: "globals.yaml", templateFolder: ""}, expected: "globalreplacement_expected.yaml", templated: true},
-		{name: "override", args: args{compose: "replacement_compose.yaml", valueFile: "values.yaml", globalFile: "globals.yaml", templateFolder: ""}, expected: "override_expected.yaml", templated: true},
-		{name: "basictemplate", args: args{compose: "basictemplate_compose.yaml", valueFile: "", globalFile: "", templateFolder: "templates"}, expected: "basictemplate_expected.yaml", templated: true},
-		{name: "varintemplate", args: args{compose: "varintemplate_compose.yaml", valueFile: "values.yaml", globalFile: "globals.yaml", templateFolder: "templates"}, expected: "varintemplate_expected.yaml", templated: true},
+		{name: "varreplacement", args: args{compose: "replacement_compose.yaml", valueFile: "values.yaml", globalFile: "", templatesPath: ""}, expected: "varreplacement_expected.yaml", templated: true},
+		{name: "globalreplacement", args: args{compose: "replacement_compose.yaml", valueFile: "", globalFile: "globals.yaml", templatesPath: ""}, expected: "globalreplacement_expected.yaml", templated: true},
+		{name: "override", args: args{compose: "replacement_compose.yaml", valueFile: "values.yaml", globalFile: "globals.yaml", templatesPath: ""}, expected: "override_expected.yaml", templated: true},
+		{name: "basictemplate", args: args{compose: "basictemplate_compose.yaml", valueFile: "", globalFile: "", templatesPath: "templates"}, expected: "basictemplate_expected.yaml", templated: true},
+		{name: "varintemplate", args: args{compose: "varintemplate_compose.yaml", valueFile: "values.yaml", globalFile: "globals.yaml", templatesPath: "templates"}, expected: "varintemplate_expected.yaml", templated: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := &stackRepo{name: tt.name, path: "../test_data/stack_test", url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
+			repo := &stackRepo{name: tt.name, path: "../test_data/stack_test", url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil, templatesPath: tt.args.templatesPath}
 			var globalValuesMap map[string]any
 			var err error
 			if tt.args.globalFile != "" {
@@ -91,7 +91,8 @@ func TestStackGeneration(t *testing.T) {
 				}
 
 			}
-			stack := NewSwarmStack("test", repo, "main", tt.args.compose, nil, tt.args.valueFile, false, globalValuesMap, tt.args.templateFolder)
+			stack := NewSwarmStack("test", repo, "main", tt.args.compose, nil, tt.args.valueFile, false, globalValuesMap)
+			stack.UpdateTemplatesPath("")
 			stackBytes, err := stack.GenerateStack()
 			if err != nil {
 				t.Errorf("%s: unexpected error: %s", tt.name, err)

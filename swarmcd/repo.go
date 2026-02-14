@@ -18,9 +18,10 @@ type stackRepo struct {
 	gitRepoObject *git.Repository
 	auth          *http.BasicAuth
 	path          string
+	templatesPath string
 }
 
-func newStackRepo(name string, repoPath string, url string, auth *http.BasicAuth) (*stackRepo, error) {
+func newStackRepo(name string, repoPath string, url string, auth *http.BasicAuth, templatesPath string) (*stackRepo, error) {
 	var repo *git.Repository
 	cloneOptions := &git.CloneOptions{
 		URL:  url,
@@ -52,6 +53,7 @@ func newStackRepo(name string, repoPath string, url string, auth *http.BasicAuth
 		auth:          auth,
 		lock:          &sync.Mutex{},
 		gitRepoObject: repo,
+		templatesPath: templatesPath,
 	}, nil
 }
 

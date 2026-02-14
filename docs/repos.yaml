@@ -19,4 +19,7 @@ repo-name:
   # file
   password_file: /path/to/password/file
 
-  
+  # Path to the templates folder for this
+  # repository. It is relative to the root
+  # of the repository.
+  templates_path: path/to/templates/folder

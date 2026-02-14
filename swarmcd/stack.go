@@ -27,27 +27,11 @@ type swarmStack struct {
 	valuesFile      string
 	discoverSecrets bool
 	globalValuesMap map[string]any
-	templateFolder  string
+	templatesPath   string
 	templated       bool
 }
 
-func NewSwarmStack(name string, repo *stackRepo, branch string, composePath string, sopsFiles []string, valuesFile string, discoverSecrets bool, globalValuesMap map[string]any, templateFolder string) *swarmStack {
-	log := logger.With(
-		slog.String("stack", name),
-		slog.String("branch", branch),
-	)
-	if repo != nil {
-		templateFolder = path.Join(repo.path, templateFolder)
-	}
-
-	_, err := os.Stat(templateFolder)
-	if err != nil {
-		if errors.Is(err, os.ErrPermission) {
-			log.Error("Cannot access template folder due to permission", "err", err, "folder", templateFolder)
-		}
-		templateFolder = ""
-	}
-
+func NewSwarmStack(name string, repo *stackRepo, branch string, composePath string, sopsFiles []string, valuesFile string, discoverSecrets bool, globalValuesMap map[string]any) *swarmStack {
 	return &swarmStack{
 		name:            name,
 		repo:            repo,
@@ -57,9 +41,41 @@ func NewSwarmStack(name string, repo *stackRepo, branch string, composePath stri
 		valuesFile:      valuesFile,
 		discoverSecrets: discoverSecrets,
 		globalValuesMap: globalValuesMap,
-		templateFolder:  templateFolder,
+		templatesPath:   "",
 		templated:       false,
 	}
+}
+
+// Parameter should be "" to grab the value from the repository config (if available)
+// Providing one override this setting.
+func (swarmStack *swarmStack) UpdateTemplatesPath(templatesPath string) {
+	log := logger.With(
+		slog.String("stack", swarmStack.name),
+		slog.String("branch", swarmStack.branch),
+	)
+
+	// Reset the previous value, maybe the filesystem state has changed
+	swarmStack.templatesPath = ""
+
+	if templatesPath == "" && swarmStack.repo != nil && swarmStack.repo.templatesPath != "" {
+		templatesPath = path.Join(swarmStack.repo.path, swarmStack.repo.templatesPath)
+	}
+
+	if templatesPath == "" {
+		return
+	}
+
+	_, err := os.Stat(templatesPath)
+	if err == nil {
+		swarmStack.templatesPath = templatesPath
+		return
+	}
+
+	if errors.Is(err, os.ErrPermission) {
+		log.Error("Cannot access template folder due to permission", "err", err, "folder", templatesPath)
+	}
+
+	return
 }
 
 func (swarmStack *swarmStack) updateStack() (revision string, err error) {
@@ -74,6 +90,8 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		return
 	}
 	log.Debug("changes pulled", "revision", revision)
+
+	swarmStack.UpdateTemplatesPath("")
 
 	stackBytes, err := swarmStack.GenerateStack()
 	if err != nil {
@@ -145,7 +163,7 @@ func (swarmStack *swarmStack) GenerateStack() (stackBytes []byte, err error) {
 		maps.Copy(mergedValuesMap, valuesMap)
 	}
 
-	if len(mergedValuesMap) == 0 && swarmStack.templateFolder == "" {
+	if len(mergedValuesMap) == 0 && swarmStack.templatesPath == "" {
 		// No need to continue, this file isn't templated
 		return
 	}
@@ -156,16 +174,16 @@ func (swarmStack *swarmStack) GenerateStack() (stackBytes []byte, err error) {
 		return nil, fmt.Errorf("could not parse %s stack compose file as a Go template: %w", swarmStack.name, err)
 	}
 
-	if swarmStack.templateFolder != "" {
+	if swarmStack.templatesPath != "" {
 		log.Debug("Loading template folder...")
 
-		pattern := path.Join(swarmStack.templateFolder, "*.tmpl")
+		pattern := path.Join(swarmStack.templatesPath, "*.tmpl")
 		filenames, err := filepath.Glob(pattern)
 		if err == nil {
 			if filenames != nil {
 				_, err = templ.ParseFiles(filenames...)
 			} else {
-				log.Debug("Skipping, folder empty", "folder", swarmStack.templateFolder)
+				log.Debug("Skipping, folder empty", "folder", swarmStack.templatesPath)
 			}
 		}
 		if err != nil {
