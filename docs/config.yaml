@@ -1,7 +1,7 @@
 # SwarmCD configuration file refernce
 
-# The interval in seconds that SwarmCD 
-# waits everytime before pulling 
+# The interval in seconds that SwarmCD
+# waits everytime before pulling
 update_interval: 120
 
 # The path where SwarmCD will checkout repos
@@ -15,13 +15,27 @@ sops_secrets_discovery: true
 # and secret names
 auto_rotate: true
 
-# You can define repos here instead of 
+# You can define repos here instead of
 # defining a separate repos.yaml file
 repos:
 
-# You can define stacks here instead of 
+# You can define stacks here instead of
 # defining a separate stacks.yaml file
 stacks:
 
 # The WEB UI address
 address: 0.0.0.0:8080
+
+# Webhook configuration for triggering updates on-demand
+# instead of waiting for the polling interval.
+# The webhook key is used for authentication.
+
+# Webhook key directly in config (not recommended for production)
+webhook_key: your-secret-key
+
+# Recommended: Use a file path for the webhook key.
+# This supports Docker secrets (e.g., /run/secrets/webhook_key)
+webhook_key_file: /run/secrets/webhook_key
+
+# Alternatively, set the WEBHOOK_KEY environment variable.
+# Priority order: WEBHOOK_KEY env var > webhook_key_file > webhook_key

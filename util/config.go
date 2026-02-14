@@ -3,6 +3,8 @@ package util
 import (
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -31,6 +33,8 @@ type Config struct {
 	RepoConfigs          map[string]*RepoConfig  `mapstructure:"repos"`
 	SopsSecretsDiscovery bool                    `mapstructure:"sops_secrets_discovery"`
 	Address              string                  `mapstructure:"address"`
+	WebhookKey           string                  `mapstructure:"webhook_key"`
+	WebhookKeyFile       string                  `mapstructure:"webhook_key_file"`
 }
 
 var Configs Config
@@ -91,4 +95,26 @@ func readStackConfigs() (err error) {
 		return
 	}
 	return stacksViper.Unmarshal(&Configs.StackConfigs)
+}
+
+// GetWebhookKey returns the webhook key from config, file, or environment variable.
+// Priority: WEBHOOK_KEY env var > webhook_key_file > webhook_key config
+func GetWebhookKey() string {
+	// Check environment variable first
+	if envKey := os.Getenv("WEBHOOK_KEY"); envKey != "" {
+		return envKey
+	}
+
+	// Check file path (supports Docker secrets)
+	if Configs.WebhookKeyFile != "" {
+		keyBytes, err := os.ReadFile(Configs.WebhookKeyFile)
+		if err != nil {
+			Logger.Error("could not read webhook key file", "file", Configs.WebhookKeyFile, "error", err)
+			return ""
+		}
+		return strings.TrimSpace(string(keyBytes))
+	}
+
+	// Fall back to config value
+	return Configs.WebhookKey
 }
