@@ -3,18 +3,21 @@
     "Name": "Project Alpha",
     "Error": "",
     "Revision": "v1.0.1",
-    "RepoURL": "https://github.com/user/project-alpha"
+    "RepoURL": "https://github.com/user/project-alpha",
+    "Ref": "branch:main"
   },
   {
     "Name": "Project Beta",
     "Error": "Failed to build",
     "Revision": "v2.3.4",
-    "RepoURL": "https://github.com/user/project-beta"
+    "RepoURL": "https://github.com/user/project-beta",
+    "Ref": "tag:v2.3.4"
   },
   {
     "Name": "Project Gamma",
     "Error": "",
     "Revision": "v0.9.8",
-    "RepoURL": "https://github.com/user/project-gamma"
+    "RepoURL": "https://github.com/user/project-gamma",
+    "Ref": "branch:develop"
   }
 ]
