@@ -29,6 +29,16 @@ nginx:
   compose_file: nginx/compose.yaml
 ```
 
+You can also deploy from a specific git tag instead of a branch (useful for release-based deployments):
+
+```yaml
+# stacks.yaml
+nginx:
+  repo: swarm-cd-example
+  tag: v1.2.3
+  compose_file: nginx/compose.yaml
+```
+
 And finally, we deploy SwarmCD to the cluster
 using the following docker-compose file:
 
