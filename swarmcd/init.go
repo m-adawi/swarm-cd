@@ -28,6 +28,10 @@ var repos map[string]*stackRepo = map[string]*stackRepo{}
 var dockerCli *command.DockerCli
 
 func Init() (err error) {
+	err = initExternalResolvers()
+	if err != nil {
+		return err
+	}
 	err = initRepos()
 	if err != nil {
 		return err
@@ -41,6 +45,20 @@ func Init() (err error) {
 		return err
 	}
 	return
+}
+
+func initExternalResolvers() error {
+	// Initialize Vault-based resolver (if configured).
+	if err := util.InitVault(); err != nil {
+		return err
+	}
+
+	// Initialize Consul-based resolver (if configured).
+	if err := util.InitConsul(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func initRepos() error {

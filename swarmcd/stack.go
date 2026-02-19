@@ -69,6 +69,12 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		return
 	}
 
+	log.Debug("resolving external values...")
+	err = resolveExternalValues(stackContents)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve external values for %s stack: %w", swarmStack.name, err)
+	}
+
 	log.Debug("decrypting secrets...")
 	err = swarmStack.decryptSopsFiles(stackContents)
 	if err != nil {
@@ -93,6 +99,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	err = swarmStack.deployStack()
 	return
 }
+
 
 func (swarmStack *swarmStack) readStack() ([]byte, error) {
 	composeFile := path.Join(swarmStack.repo.path, swarmStack.composePath)
