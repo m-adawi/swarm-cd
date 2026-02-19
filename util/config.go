@@ -24,16 +24,19 @@ type RepoConfig struct {
 }
 
 type Config struct {
-	ReposPath            string                  `mapstructure:"repos_path"`
-	UpdateInterval       int                     `mapstructure:"update_interval"`
-	AutoRotate           bool                    `mapstructure:"auto_rotate"`
-	StackConfigs         map[string]*StackConfig `mapstructure:"stacks"`
-	RepoConfigs          map[string]*RepoConfig  `mapstructure:"repos"`
-	SopsSecretsDiscovery bool                    `mapstructure:"sops_secrets_discovery"`
-	Address              string                  `mapstructure:"address"`
-	VaultAddress         string                  `mapstructure:"vault_address"`
-	VaultToken           string                  `mapstructure:"vault_token"`
-	VaultNamespace       string                  `mapstructure:"vault_namespace"`
+	ReposPath            	string                  `mapstructure:"repos_path"`
+	UpdateInterval       	int                     `mapstructure:"update_interval"`
+	AutoRotate           	bool                    `mapstructure:"auto_rotate"`
+	StackConfigs         	map[string]*StackConfig `mapstructure:"stacks"`
+	RepoConfigs          	map[string]*RepoConfig  `mapstructure:"repos"`
+	SopsSecretsDiscovery 	bool                    `mapstructure:"sops_secrets_discovery"`
+	Address              	string                  `mapstructure:"address"`
+	VaultAddress            string                  `mapstructure:"vault_address"`
+	VaultToken              string                  `mapstructure:"vault_token"`
+	VaultNamespace          string                  `mapstructure:"vault_namespace"`
+	VaultTokenRenewInterval int                     `mapstructure:"vault_token_renew_interval"` // in days, default 1
+	ConsulAddress           string                  `mapstructure:"consul_address"`
+	ConsulToken             string                  `mapstructure:"consul_token"`
 }
 
 var Configs Config
@@ -70,6 +73,9 @@ func readConfig() (err error) {
 	configViper.SetDefault("vault_address", "")
 	configViper.SetDefault("vault_token", "")
 	configViper.SetDefault("vault_namespace", "")
+	configViper.SetDefault("vault_token_renew_interval", 1) // 1 day by default
+	configViper.SetDefault("consul_address", "")
+	configViper.SetDefault("consul_token", "")
 	err = configViper.ReadInConfig()
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
 		return
