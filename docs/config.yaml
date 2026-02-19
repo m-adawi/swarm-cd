@@ -34,3 +34,9 @@ vault_token: ""
 
 # The Vault Namespace (for enterprise)
 vault_namespace: ""
+
+# The Consul address
+consul_address: ""
+
+# The Consul Token
+consul_token: ""
