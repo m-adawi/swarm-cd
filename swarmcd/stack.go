@@ -81,10 +81,12 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 		return "", fmt.Errorf("failed to decrypt one or more sops files for %s stack: %w", swarmStack.name, err)
 	}
 
-	log.Debug("rotating configs and secrets...")
-	err = swarmStack.rotateConfigsAndSecrets(stackContents)
-	if err != nil {
-		return
+	if config.AutoRotate {
+		log.Debug("rotating configs and secrets...")
+		err = swarmStack.rotateConfigsAndSecrets(stackContents)
+		if err != nil {
+			return
+		}
 	}
 
 	log.Debug("writing stack to file...")
