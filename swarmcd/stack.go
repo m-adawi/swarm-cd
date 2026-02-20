@@ -164,11 +164,12 @@ func discoverSecrets(composeMap map[string]any, composePath string) ([]string, e
 			if !ok {
 				return nil, fmt.Errorf("invalid compose file: %s secret must be a map", secretName)
 			}
-			// ignore external secrets (thise without file key)
-			if _, ok := secretMap["file"]; !ok {
+			// ignore external secrets (those without file key)
+			secretFileObj, ok := secretMap["file"]
+			if !ok {
 				continue
 			}
-			secretFile, ok := secretMap["file"].(string)
+			secretFile, ok := secretFileObj.(string)
 			if !ok {
 				return nil, fmt.Errorf("invalid compose file: %s file field must be a string", secretName)
 			}
