@@ -11,6 +11,9 @@ func TestRotateExternalObjects(t *testing.T) {
 	stack := newSwarmStack("test", repo, "main", "docker-compose.yaml", nil, "", false)
 	objects := map[string]any{
 		"my-secret": map[string]any{"external": true},
+		"my-plugin-external-secret": map[string]any{
+			"driver": "my-driver", "labels": map[string]string{"my_option": "value"},
+		},
 	}
 	err := stack.rotateObjects(objects, "secrets")
 	if err != nil {

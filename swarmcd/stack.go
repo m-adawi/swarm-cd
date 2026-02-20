@@ -208,11 +208,12 @@ func (swarmStack *swarmStack) rotateObjects(objects map[string]any, objectType s
 		if !ok {
 			return fmt.Errorf("invalid compose file: %s object must be a map", objectName)
 		}
-		isExternal, ok := objectMap["external"].(bool)
-		if ok && isExternal {
+		// ignore external secrets (those without file key)
+		objectFileObj, ok := objectMap["file"]
+		if !ok {
 			continue
 		}
-		objectFile, ok := objectMap["file"].(string)
+		objectFile, ok := objectFileObj.(string)
 		if !ok {
 			return fmt.Errorf("invalid compose file: %s file field must be a string", objectName)
 		}
