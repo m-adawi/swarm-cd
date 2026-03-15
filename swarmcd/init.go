@@ -9,6 +9,7 @@ import (
 
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/m-adawi/swarm-cd/util"
 )
@@ -46,7 +47,7 @@ func Init() (err error) {
 func initRepos() error {
 	for repoName, repoConfig := range config.RepoConfigs {
 		repoPath := path.Join(config.ReposPath, repoName)
-		auth, err := createHTTPBasicAuth(repoName)
+		auth, err := createAuth(repoName)
 		if err != nil {
 			return err
 		}
@@ -58,9 +59,9 @@ func initRepos() error {
 	return nil
 }
 
-func createHTTPBasicAuth(repoName string) (*http.BasicAuth, error) {
+func createAuth(repoName string) (transport.AuthMethod, error) {
 	repoConfig := config.RepoConfigs[repoName]
-	// assume repo is public and no auth is required
+	// no credentials configured — public repo, no auth required
 	if repoConfig.Username == "" && repoConfig.Password == "" && repoConfig.PasswordFile == "" {
 		return nil, nil
 	}
