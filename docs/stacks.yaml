@@ -1,16 +1,22 @@
-# SwarmCD stacks configuration refernce 
+# SwarmCD stacks configuration refernce
 # This file should contain all the stacks
-# that you want swarm-cd to keep synching 
+# that you want swarm-cd to keep synching
 
-# Name of the stack, it will be used in 
+# Name of the stack, it will be used in
 # the stack deploy command as the stack name
 stack-name:
   # The repo that contain the stack compose file
   # and other config files
   repo: repo-name
   # The repo branch to checkout from the stack repo
-  # before deploying or updating stack
+  # before deploying or updating stack.
+  # Use either branch OR tag, not both.
+  # If neither is specified, defaults to 'main'.
   branch: main
+  # Alternatively, use a git tag instead of a branch.
+  # Useful for release-based deployments (e.g., v1.2.3).
+  # Mutually exclusive with 'branch'.
+  # tag: v1.0.0
   # The path to the docker compose file where stack
   # is defined
   compose_file: /path/to/compose.yaml
