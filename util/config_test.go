@@ -6,6 +6,132 @@ import (
 	"testing"
 )
 
+// ---------- PersistConfigs tests ----------
+
+func TestPersistConfigs_RoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer os.Chdir(origDir)
+
+	origConfigs := Configs
+	defer func() { Configs = origConfigs }()
+
+	Configs.StackConfigs = map[string]*StackConfig{
+		"my-stack": {
+			Repo:        "my-repo",
+			Branch:      "main",
+			ComposeFile: "docker-compose.yaml",
+		},
+	}
+	Configs.RepoConfigs = map[string]*RepoConfig{
+		"my-repo": {
+			Url: "https://example.com/repo",
+		},
+	}
+
+	if err := PersistConfigs(); err != nil {
+		t.Fatalf("PersistConfigs: %v", err)
+	}
+
+	if _, err := os.Stat("stacks.yaml"); err != nil {
+		t.Fatalf("stacks.yaml not created: %v", err)
+	}
+	if _, err := os.Stat("repos.yaml"); err != nil {
+		t.Fatalf("repos.yaml not created: %v", err)
+	}
+
+	stacksData, err := os.ReadFile("stacks.yaml")
+	if err != nil {
+		t.Fatalf("read stacks.yaml: %v", err)
+	}
+	if !strings.Contains(string(stacksData), "my-stack") {
+		t.Errorf("stacks.yaml missing 'my-stack': %s", stacksData)
+	}
+	if !strings.Contains(string(stacksData), "docker-compose.yaml") {
+		t.Errorf("stacks.yaml missing compose_file: %s", stacksData)
+	}
+
+	reposData, err := os.ReadFile("repos.yaml")
+	if err != nil {
+		t.Fatalf("read repos.yaml: %v", err)
+	}
+	if !strings.Contains(string(reposData), "my-repo") {
+		t.Errorf("repos.yaml missing 'my-repo': %s", reposData)
+	}
+	if !strings.Contains(string(reposData), "https://example.com/repo") {
+		t.Errorf("repos.yaml missing url: %s", reposData)
+	}
+}
+
+func TestPersistConfigs_AtomicWrite(t *testing.T) {
+	dir := t.TempDir()
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer os.Chdir(origDir)
+
+	origConfigs := Configs
+	defer func() { Configs = origConfigs }()
+
+	Configs.StackConfigs = map[string]*StackConfig{
+		"test-stack": {Repo: "test-repo", Branch: "main"},
+	}
+	Configs.RepoConfigs = map[string]*RepoConfig{
+		"test-repo": {Url: "https://example.com/test"},
+	}
+
+	if err := PersistConfigs(); err != nil {
+		t.Fatalf("PersistConfigs: %v", err)
+	}
+
+	// Verify no temp files left behind
+	entries, _ := os.ReadDir(dir)
+	for _, e := range entries {
+		if strings.HasSuffix(e.Name(), ".tmp") {
+			t.Errorf("temp file left behind: %s", e.Name())
+		}
+	}
+}
+
+func TestPersistConfigs_OmitsEmptyFields(t *testing.T) {
+	dir := t.TempDir()
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer os.Chdir(origDir)
+
+	origConfigs := Configs
+	defer func() { Configs = origConfigs }()
+
+	Configs.StackConfigs = map[string]*StackConfig{
+		"my-stack": {
+			Repo:   "my-repo",
+			Branch: "main",
+			// Tag, ComposeFile, etc. are empty — should be omitted
+		},
+	}
+	Configs.RepoConfigs = map[string]*RepoConfig{
+		"my-repo": {Url: "https://example.com/repo"},
+	}
+
+	if err := PersistConfigs(); err != nil {
+		t.Fatalf("PersistConfigs: %v", err)
+	}
+
+	data, _ := os.ReadFile("stacks.yaml")
+	if strings.Contains(string(data), "compose_file") {
+		t.Errorf("expected empty compose_file to be omitted: %s", data)
+	}
+	if strings.Contains(string(data), "tag") {
+		t.Errorf("expected empty tag to be omitted: %s", data)
+	}
+}
+
 // ---------- Config conflict detection tests ----------
 
 // TestConfigConflict_InlineStacksNoFile verifies that when stacks are

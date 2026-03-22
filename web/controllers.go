@@ -1,6 +1,7 @@
 package web
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -36,6 +37,7 @@ func getHealth(ctx *gin.Context) {
 		"uptime_seconds":          math.Floor(uptime),
 		"update_interval_seconds": util.Configs.UpdateInterval,
 		"stacks_managed":          len(stacksStatus),
+		"mutation_api_enabled":    MutationAPIEnabled(),
 	}
 
 	if warnings := util.ConfigWarnings(); len(warnings) > 0 {
@@ -66,6 +68,34 @@ func getStack(ctx *gin.Context) {
 		LastChangeAt:   v.LastChangeAt,
 		LastDeployedAt: v.LastDeployedAt,
 	})
+}
+
+func patchStack(ctx *gin.Context) {
+	name := ctx.Param("name")
+
+	var req swarmcd.PatchRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("invalid request body: %v", err),
+		})
+		return
+	}
+
+	resp, err := swarmcd.PatchStack(name, req)
+	if err != nil {
+		var validationErr *swarmcd.ValidationError
+		var notFoundErr *swarmcd.NotFoundError
+		if errors.As(err, &validationErr) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": validationErr.Message})
+		} else if errors.As(err, &notFoundErr) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": notFoundErr.Message})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
 }
 
 func getStacks(ctx *gin.Context) {

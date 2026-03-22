@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/goccy/go-yaml"
 	"github.com/spf13/viper"
 )
 
@@ -24,20 +25,20 @@ type ConfigConflict struct {
 var Conflict ConfigConflict
 
 type StackConfig struct {
-	Repo                 string
-	Branch               string
-	Tag                  string
-	ComposeFile          string   `mapstructure:"compose_file"`
-	ValuesFile           string   `mapstructure:"values_file"`
-	SopsFiles            []string `mapstructure:"sops_files"`
-	SopsSecretsDiscovery bool     `mapstructure:"sops_secrets_discovery"`
+	Repo                 string   `yaml:"repo"`
+	Branch               string   `yaml:"branch,omitempty"`
+	Tag                  string   `yaml:"tag,omitempty"`
+	ComposeFile          string   `mapstructure:"compose_file" yaml:"compose_file,omitempty"`
+	ValuesFile           string   `mapstructure:"values_file" yaml:"values_file,omitempty"`
+	SopsFiles            []string `mapstructure:"sops_files" yaml:"sops_files,omitempty"`
+	SopsSecretsDiscovery bool     `mapstructure:"sops_secrets_discovery" yaml:"sops_secrets_discovery,omitempty"`
 }
 
 type RepoConfig struct {
-	Url          string
-	Username     string
-	Password     string
-	PasswordFile string `mapstructure:"password_file"`
+	Url          string `yaml:"url"`
+	Username     string `yaml:"username,omitempty"`
+	Password     string `yaml:"password,omitempty"`
+	PasswordFile string `mapstructure:"password_file" yaml:"password_file,omitempty"`
 }
 
 type Config struct {
@@ -132,6 +133,38 @@ func logConfigWarnings(log *slog.Logger) {
 	for _, w := range ConfigWarnings() {
 		log.Warn(w)
 	}
+}
+
+// PersistConfigs writes the current stack and repo configurations to their
+// respective split files (stacks.yaml, repos.yaml) using atomic writes.
+// If config is defined inline in config.yaml, these files may be ignored on
+// next startup — the ConfigWarnings indicate this case.
+func PersistConfigs() error {
+	if err := atomicWriteYAML("stacks.yaml", Configs.StackConfigs); err != nil {
+		return err
+	}
+	if err := atomicWriteYAML("repos.yaml", Configs.RepoConfigs); err != nil {
+		return err
+	}
+	return nil
+}
+
+// atomicWriteYAML marshals data to YAML and writes it atomically by writing
+// to a temp file first, then renaming.
+func atomicWriteYAML(filePath string, data interface{}) error {
+	b, err := yaml.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("failed to marshal %s: %w", filePath, err)
+	}
+	tmp := filePath + ".tmp"
+	if err := os.WriteFile(tmp, b, 0644); err != nil {
+		return fmt.Errorf("failed to write %s: %w", tmp, err)
+	}
+	if err := os.Rename(tmp, filePath); err != nil {
+		os.Remove(tmp)
+		return fmt.Errorf("failed to rename %s to %s: %w", tmp, filePath, err)
+	}
+	return nil
 }
 
 func readConfig() (err error) {
