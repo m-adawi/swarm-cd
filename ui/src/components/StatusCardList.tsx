@@ -8,7 +8,7 @@ function StatusCardList({ statuses, query }: Readonly<{ statuses: StackStatus[];
 
   useEffect(() => {
     const filtered = statuses.filter(status =>
-      Object.values(status).some(value => value.toString().toLowerCase().includes(query.toLowerCase()))
+      Object.values(status).some(value => value != null && value.toString().toLowerCase().includes(query.toLowerCase()))
     )
     setFilteredStatuses(filtered)
   }, [statuses, query])
@@ -21,7 +21,7 @@ function StatusCardList({ statuses, query }: Readonly<{ statuses: StackStatus[];
         </Text>
       ) : (
         filteredStatuses.map((item, index) => (
-          <StatusCard key={index} name={item.Name} error={item.Error} revision={item.Revision} repoURL={item.RepoURL} gitRef={item.Ref} />
+          <StatusCard key={index} name={item.name} error={item.error} revision={item.revision} repoURL={item.repo_url} refType={item.ref_type} refValue={item.ref_value} lastChangeAt={item.last_change_at} lastDeployedAt={item.last_deployed_at} />
         ))
       )}
     </>
