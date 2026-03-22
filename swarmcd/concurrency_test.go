@@ -24,10 +24,12 @@ func TestConcurrentStatusRead(t *testing.T) {
 		name := fmt.Sprintf("test-stack-%d", i)
 		repo := &stackRepo{name: name, path: "/tmp/test", url: "http://example.com", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
 		repos[i] = repo
-		s := newSwarmStack(name, repo, "main", "docker-compose.yaml", nil, "", false)
+		s := newSwarmStack(name, repo, "main", "", "docker-compose.yaml", nil, "", false)
 		stacks = append(stacks, s)
 		stackStatus[name] = &StackStatus{
 			RepoURL:  "http://example.com",
+			RefType:  "branch",
+			RefValue: "main",
 			Revision: "abc12345",
 		}
 	}
@@ -103,6 +105,8 @@ func TestGetStackStatusReturnsSnapshot(t *testing.T) {
 			Error:    "",
 			Revision: "aabb1122",
 			RepoURL:  "http://example.com",
+			RefType:  "branch",
+			RefValue: "main",
 		},
 	}
 	stacks = nil
@@ -149,9 +153,11 @@ func TestLockOrderingNoDeadlock(t *testing.T) {
 		name := fmt.Sprintf("deadlock-test-%d", i)
 		repo := &stackRepo{name: name, path: "/tmp/test", url: "http://example.com", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
 		repos[i] = repo
-		stacks = append(stacks, newSwarmStack(name, repo, "main", "docker-compose.yaml", nil, "", false))
+		stacks = append(stacks, newSwarmStack(name, repo, "main", "", "docker-compose.yaml", nil, "", false))
 		stackStatus[name] = &StackStatus{
-			RepoURL: "http://example.com",
+			RepoURL:  "http://example.com",
+			RefType:  "branch",
+			RefValue: "main",
 		}
 	}
 	stateMu.Unlock()

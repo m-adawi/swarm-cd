@@ -42,13 +42,20 @@ func updateStackThread(swarmStack *swarmStack, waitGroup *sync.WaitGroup) {
 	revision, err := swarmStack.updateStack()
 	repoLock.Unlock() // Release repo.lock BEFORE acquiring stateMu
 
+	now := time.Now()
+
 	stateMu.Lock()
 	status := stackStatus[swarmStack.name]
 	if err != nil {
 		status.Error = err.Error()
 	} else {
+		// Set LastChangeAt when the revision changes
+		if revision != status.Revision {
+			status.LastChangeAt = &now
+		}
 		status.Error = ""
 		status.Revision = revision
+		status.LastDeployedAt = &now
 	}
 	stateMu.Unlock()
 
@@ -59,16 +66,32 @@ func updateStackThread(swarmStack *swarmStack, waitGroup *sync.WaitGroup) {
 	logger.Info(fmt.Sprintf("done updating %s stack", swarmStack.name))
 }
 
+// GetRuntimeInfo returns a copy of the instance's runtime metadata.
+// Protected by stateMu for consistency, though in practice runtimeInfo
+// is only written once during Init() before Run() starts.
+func GetRuntimeInfo() RuntimeInfo {
+	stateMu.RLock()
+	defer stateMu.RUnlock()
+	return runtimeInfo
+}
+
 // GetStackStatus returns a snapshot of all stack statuses under a read lock.
-// The returned map is a copy — callers cannot mutate the original values.
-// StackStatus currently contains only value types (strings); update this
-// copy logic if pointer or slice fields are added.
+// Pointer fields (LastChangeAt, LastDeployedAt) are deep-copied so callers
+// cannot mutate the original values.
 func GetStackStatus() map[string]*StackStatus {
 	stateMu.RLock()
 	defer stateMu.RUnlock()
 	snapshot := make(map[string]*StackStatus, len(stackStatus))
 	for k, v := range stackStatus {
 		cp := *v
+		if v.LastChangeAt != nil {
+			t := *v.LastChangeAt
+			cp.LastChangeAt = &t
+		}
+		if v.LastDeployedAt != nil {
+			t := *v.LastDeployedAt
+			cp.LastDeployedAt = &t
+		}
 		snapshot[k] = &cp
 	}
 	return snapshot

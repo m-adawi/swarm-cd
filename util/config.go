@@ -3,9 +3,25 @@ package util
 import (
 	"errors"
 	"fmt"
+	"log/slog"
+	"os"
 
 	"github.com/spf13/viper"
 )
+
+// ConfigConflict records whether stacks/repos are defined inline in
+// config.yaml (which prevents API persistence from working) and whether
+// the corresponding split files also exist on disk.
+type ConfigConflict struct {
+	StacksInline     bool
+	ReposInline      bool
+	StacksFileExists bool
+	ReposFileExists  bool
+}
+
+// Conflict is populated during LoadConfigs and reflects the inline vs.
+// split-file state detected at startup.
+var Conflict ConfigConflict
 
 type StackConfig struct {
 	Repo                 string
@@ -41,6 +57,10 @@ func LoadConfigs() (err error) {
 	if err != nil {
 		return fmt.Errorf("could not read configuration file: %w", err)
 	}
+
+	// Detect inline config conflicts and check for split files on disk.
+	Conflict = detectConflicts()
+
 	if Configs.RepoConfigs == nil {
 		err = readRepoConfigs()
 		if err != nil {
@@ -53,7 +73,65 @@ func LoadConfigs() (err error) {
 			return fmt.Errorf("could not load stacks file: %w", err)
 		}
 	}
+
+	// Emit startup log warnings for detected conflicts.
+	logConfigWarnings(Logger)
+
 	return
+}
+
+// detectConflicts checks whether stacks/repos were loaded inline from
+// config.yaml and whether the corresponding split files exist on disk.
+func detectConflicts() ConfigConflict {
+	c := ConfigConflict{
+		StacksInline: Configs.StackConfigs != nil,
+		ReposInline:  Configs.RepoConfigs != nil,
+	}
+	if _, err := os.Stat("stacks.yaml"); err == nil {
+		c.StacksFileExists = true
+	}
+	if _, err := os.Stat("repos.yaml"); err == nil {
+		c.ReposFileExists = true
+	}
+	return c
+}
+
+// ConfigWarnings returns human-readable warning strings based on the
+// current ConfigConflict state. The returned slice is empty when no
+// conflicts exist.
+func ConfigWarnings() []string {
+	return configWarnings(Conflict)
+}
+
+func configWarnings(c ConfigConflict) []string {
+	var warnings []string
+
+	if c.StacksInline {
+		if c.StacksFileExists {
+			warnings = append(warnings, "stacks.yaml is ignored because stacks are defined in config.yaml")
+		} else {
+			warnings = append(warnings, "API changes to stacks won't persist across restarts")
+		}
+	}
+
+	if c.ReposInline {
+		if c.ReposFileExists {
+			warnings = append(warnings, "repos.yaml is ignored because repos are defined in config.yaml")
+		} else {
+			warnings = append(warnings, "API changes to repos won't persist across restarts")
+		}
+	}
+
+	return warnings
+}
+
+func logConfigWarnings(log *slog.Logger) {
+	if log == nil {
+		return
+	}
+	for _, w := range ConfigWarnings() {
+		log.Warn(w)
+	}
 }
 
 func readConfig() (err error) {
