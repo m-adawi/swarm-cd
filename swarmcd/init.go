@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
@@ -14,10 +15,27 @@ import (
 )
 
 type StackStatus struct {
-	Error    string
-	Revision string
-	RepoURL  string
+	Error          string
+	Revision       string
+	RepoURL        string
+	RefType        string
+	RefValue       string
+	ComposeFile    string
+	LastChangeAt   *time.Time
+	LastDeployedAt *time.Time
 }
+
+// RuntimeInfo holds instance-level metadata set at startup.
+type RuntimeInfo struct {
+	BootedAt time.Time
+	Version  string
+}
+
+// Version is the application version, overridden at build time via
+// -ldflags "-X github.com/m-adawi/swarm-cd/swarmcd.Version=..."
+var Version = "dev"
+
+var runtimeInfo RuntimeInfo
 
 var config *util.Config = &util.Configs
 
@@ -28,6 +46,11 @@ var repos map[string]*stackRepo = map[string]*stackRepo{}
 var dockerCli *command.DockerCli
 
 func Init() (err error) {
+	runtimeInfo = RuntimeInfo{
+		BootedAt: time.Now(),
+		Version:  Version,
+	}
+
 	err = initRepos()
 	if err != nil {
 		return err
@@ -97,11 +120,39 @@ func initStacks() error {
 		if !ok {
 			return fmt.Errorf("error initializing %s stack, no such repo: %s", stack, stackConfig.Repo)
 		}
+
+		// Validate branch/tag mutual exclusivity and determine ref
+		branch := stackConfig.Branch
+		tag := stackConfig.Tag
+		var refType, refValue string
+
+		if branch != "" && tag != "" {
+			return fmt.Errorf("error initializing %s stack: cannot specify both branch and tag", stack)
+		} else if tag != "" {
+			refType = "tag"
+			refValue = tag
+		} else if branch != "" {
+			refType = "branch"
+			refValue = branch
+		} else {
+			// Default to main branch for backward compatibility
+			branch = "main"
+			refType = "branch"
+			refValue = "main"
+		}
+
 		discoverSecrets := config.SopsSecretsDiscovery || stackConfig.SopsSecretsDiscovery
-		swarmStack := newSwarmStack(stack, stackRepo, stackConfig.Branch, stackConfig.ComposeFile, stackConfig.SopsFiles, stackConfig.ValuesFile, discoverSecrets)
+		swarmStack := newSwarmStack(stack, stackRepo, branch, tag, stackConfig.ComposeFile, stackConfig.SopsFiles, stackConfig.ValuesFile, discoverSecrets)
+
+		stateMu.Lock()
 		stacks = append(stacks, swarmStack)
-		stackStatus[stack] = &StackStatus{}
-		stackStatus[stack].RepoURL = stackRepo.url
+		stackStatus[stack] = &StackStatus{
+			RepoURL:     stackRepo.url,
+			RefType:     refType,
+			RefValue:    refValue,
+			ComposeFile: stackConfig.ComposeFile,
+		}
+		stateMu.Unlock()
 	}
 	return nil
 }
