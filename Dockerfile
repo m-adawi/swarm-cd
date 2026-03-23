@@ -9,6 +9,7 @@ RUN npm run build
 # Stage 2: Build the backend
 FROM golang:1.22-alpine AS backend-build
 ARG TARGETARCH
+ARG VERSION=dev
 WORKDIR /backend
 COPY go.mod go.sum ./
 RUN go mod download
@@ -16,7 +17,9 @@ COPY cmd/ cmd/
 COPY util/ util/
 COPY web/ web/
 COPY swarmcd/ swarmcd/
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -o /swarm-cd ./cmd/
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build \
+      -ldflags "-X github.com/m-adawi/swarm-cd/swarmcd.Version=${VERSION}" \
+      -o /swarm-cd ./cmd/
 
 # Stage 3: Final production image (depends on previous stages)
 FROM alpine:3.22.1

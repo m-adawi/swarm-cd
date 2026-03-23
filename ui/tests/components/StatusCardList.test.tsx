@@ -4,9 +4,9 @@ import { StackStatus } from "../../src/hooks/useFetchStatuses"
 
 describe("StatusCardList", () => {
   const statuses: StackStatus[] = [
-    { Name: "Foobar", Error: "", Revision: "1.0.0", RepoURL: "https://www.url1.com" },
-    { Name: "FooFoo", Error: "", Revision: "2.0.0", RepoURL: "https://www.url2.com" },
-    { Name: "Boobaz", Error: "Oh no!!!", Revision: "2.0.0", RepoURL: "https://www.url3.com" }
+    { name: "Foobar", error: "", revision: "1.0.0", repo_url: "https://www.url1.com", ref_type: "branch", ref_value: "main", compose_file: "docker-compose.yml", last_change_at: null, last_deployed_at: null },
+    { name: "FooFoo", error: "", revision: "2.0.0", repo_url: "https://www.url2.com", ref_type: "tag", ref_value: "v2.0.0", compose_file: "docker-compose.yml", last_change_at: null, last_deployed_at: null },
+    { name: "Boobaz", error: "Oh no!!!", revision: "2.0.0", repo_url: "https://www.url3.com", ref_type: "branch", ref_value: "develop", compose_file: "docker-compose.yml", last_change_at: null, last_deployed_at: null }
   ]
 
   it("should render no statuses if the list of statuses is empty", () => {
@@ -17,7 +17,7 @@ describe("StatusCardList", () => {
   it("should render a list of statuses", () => {
     render(<StatusCardList statuses={statuses} query="" />)
     for (const status of statuses) {
-      expect(screen.getByText(status.Name)).toBeInTheDocument()
+      expect(screen.getByText(status.name)).toBeInTheDocument()
     }
   })
 
