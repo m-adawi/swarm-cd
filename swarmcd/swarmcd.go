@@ -12,7 +12,7 @@ var stacks []*swarmStack
 func Run() {
 	logger.Info("starting SwarmCD")
 	for {
-		logger.Debug("starting update loop")
+		logger.Info("starting update loop")
 		var waitGroup sync.WaitGroup
 		stacksChannel := make(chan *swarmStack, len(stacks))
 
