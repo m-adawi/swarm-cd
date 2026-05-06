@@ -97,10 +97,9 @@ func readStackConfigs() (err error) {
 	return stacksViper.Unmarshal(&Configs.StackConfigs)
 }
 
-func validateConfig() error {
+func validateConfig() {
 	if Configs.Concurrency <= 0 {
-		Logger.Warn(fmt.Sprintf("Invalid `config.Concurrency value`, using default: %v", defaultWorkers))
+		Logger.Warn(fmt.Sprintf("Invalid `config.concurrency value`, using default: %v", defaultWorkers))
 		Configs.Concurrency = defaultWorkers
 	}
-	return nil
 }
