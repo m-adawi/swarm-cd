@@ -3,7 +3,49 @@ package swarmcd
 import (
 	"sync"
 	"testing"
+
+	"github.com/m-adawi/swarm-cd/util"
 )
+
+func boolPtr(v bool) *bool { return &v }
+
+// resolveImageMode returns "always" when alwaysPull is true, "changed" otherwise.
+// The stack-level setting overrides the global config setting.
+func TestResolveImageMode(t *testing.T) {
+	tests := []struct {
+		name           string
+		configPull     bool
+		stackPull      *bool
+		expectedResult string
+	}{
+		// Stack setting is unset: falls back to config
+		{"config=false stack=unset", false, nil, "changed"},
+		{"config=true  stack=unset", true, nil, "always"},
+		// Stack setting is explicit: overrides config in both directions
+		{"config=false stack=false", false, boolPtr(false), "changed"},
+		{"config=false stack=true", false, boolPtr(true), "always"},
+		{"config=true  stack=false", true, boolPtr(false), "changed"},
+		{"config=true  stack=true", true, boolPtr(true), "always"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Point the package-level config at a fresh Config value so
+			// parallel / sequential runs don't interfere with each other.
+			originalConfig := config
+			config = &util.Config{AlwaysPullContainers: tt.configPull}
+			t.Cleanup(func() { config = originalConfig })
+
+			repo := &stackRepo{name: "test", path: "test", url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
+			s := newSwarmStack("test", repo, "main", "docker-compose.yaml", nil, "", false, tt.stackPull)
+
+			got := s.resolveImageMode()
+			if got != tt.expectedResult {
+				t.Errorf("resolveImageMode() = %q, want %q", got, tt.expectedResult)
+			}
+		})
+	}
+}
 
 // Non-file objects are ignored by the rotation
 func TestRotateObjectsWithoutFile(t *testing.T) {

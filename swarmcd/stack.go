@@ -266,21 +266,10 @@ func (swarmStack *swarmStack) writeStack(composeMap map[string]any) error {
 }
 
 func (swarmStack *swarmStack) deployStack() error {
-	// Determine effective alwaysPullContainers value
-	// Stack-level override takes precedence, fallback to global setting
-	alwaysPull := config.AlwaysPullContainers
-	if swarmStack.alwaysPullContainers != nil {
-		alwaysPull = *swarmStack.alwaysPullContainers
-	}
-	resolveImage := "changed"
-	if alwaysPull {
-		resolveImage = "always"
-	}
-
 	cmd := stack.NewStackCommand(dockerCli)
 	cmd.SetArgs([]string{
 		"deploy", "--detach", "--with-registry-auth",
-		"--resolve-image", resolveImage,
+		"--resolve-image", swarmStack.resolveImageMode(),
 		"-c", path.Join(swarmStack.repo.path, swarmStack.composePath),
 		swarmStack.name,
 	})
@@ -293,4 +282,17 @@ func (swarmStack *swarmStack) deployStack() error {
 		return fmt.Errorf("could not deploy stack %s: %s", swarmStack.name, err)
 	}
 	return nil
+}
+
+func (swarmStack *swarmStack) resolveImageMode() string {
+	// Determine effective alwaysPullContainers value
+	// Stack-level override takes precedence, fallback to global setting
+	alwaysPull := config.AlwaysPullContainers
+	if swarmStack.alwaysPullContainers != nil {
+		alwaysPull = *swarmStack.alwaysPullContainers
+	}
+	if alwaysPull {
+		return "always"
+	}
+	return "changed"
 }

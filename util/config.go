@@ -80,7 +80,7 @@ func readConfig(path string) (err error) {
 	configViper.SetDefault("repos_path", "repos")
 	configViper.SetDefault("auto_rotate", true)
 	configViper.SetDefault("sops_secrets_discovery", false)
-	configViper.SetDefault("always_pull_containers", false)
+	configViper.SetDefault("always_pull_containers", true)
 	configViper.SetDefault("address", "0.0.0.0:8080")
 	err = configViper.ReadInConfig()
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
