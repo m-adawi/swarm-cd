@@ -156,22 +156,38 @@ func (swarmStack *swarmStack) decryptSopsFiles(composeMap map[string]any) (err e
 	return
 }
 
+// filters objects to only those with a "file" key, validating
+// types along the way. The returned maps are references to the originals, so
+// callers may mutate them (e.g. to set a "name" field).
+func getFileObjects(objects map[string]any) (map[string]map[string]any, error) {
+	result := make(map[string]map[string]any)
+	for objectName, object := range objects {
+		objectMap, ok := object.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("invalid compose file: %s object must be a map", objectName)
+		}
+		// only process objects with a file: key
+		objectFileObj, ok := objectMap["file"]
+		if !ok {
+			continue
+		}
+		if _, ok = objectFileObj.(string); !ok {
+			return nil, fmt.Errorf("invalid compose file: %s file field must be a string", objectName)
+		}
+		result[objectName] = objectMap
+	}
+	return result, nil
+}
+
 func discoverSecrets(composeMap map[string]any, composePath string) ([]string, error) {
 	var sopsFiles []string
 	if secrets, ok := composeMap["secrets"].(map[string]any); ok {
-		for secretName, secret := range secrets {
-			secretMap, ok := secret.(map[string]any)
-			if !ok {
-				return nil, fmt.Errorf("invalid compose file: %s secret must be a map", secretName)
-			}
-			isExternal, ok := secretMap["external"].(bool)
-			if ok && isExternal {
-				continue
-			}
-			secretFile, ok := secretMap["file"].(string)
-			if !ok {
-				return nil, fmt.Errorf("invalid compose file: %s file field must be a string", secretName)
-			}
+		fileObjects, err := getFileObjects(secrets)
+		if err != nil {
+			return nil, err
+		}
+		for _, secretMap := range fileObjects {
+			secretFile := secretMap["file"].(string)
 			secretPath := path.Join(path.Dir(composePath), secretFile)
 			sopsFiles = append(sopsFiles, secretPath)
 		}
@@ -197,24 +213,17 @@ func (swarmStack *swarmStack) rotateConfigsAndSecrets(composeMap map[string]any)
 
 func (swarmStack *swarmStack) rotateObjects(objects map[string]any, objectType string) error {
 	objectsDir := path.Dir(path.Join(swarmStack.repo.path, swarmStack.composePath))
-	for objectName, object := range objects {
+	fileObjects, err := getFileObjects(objects)
+	if err != nil {
+		return err
+	}
+	for objectName, objectMap := range fileObjects {
 		log := logger.With(
 			slog.String("stack", swarmStack.name),
 			slog.String("branch", swarmStack.branch),
 			slog.String(objectType, objectName),
 		)
-		objectMap, ok := object.(map[string]any)
-		if !ok {
-			return fmt.Errorf("invalid compose file: %s object must be a map", objectName)
-		}
-		isExternal, ok := objectMap["external"].(bool)
-		if ok && isExternal {
-			continue
-		}
-		objectFile, ok := objectMap["file"].(string)
-		if !ok {
-			return fmt.Errorf("invalid compose file: %s file field must be a string", objectName)
-		}
+		objectFile := objectMap["file"].(string)
 		log.Debug("reading...", "file", objectFile)
 		objectFilePath := path.Join(objectsDir, objectFile)
 		configFileBytes, err := os.ReadFile(objectFilePath)

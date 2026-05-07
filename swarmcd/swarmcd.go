@@ -12,19 +12,19 @@ var stacks []*swarmStack
 func Run() {
 	logger.Info("starting SwarmCD")
 	for {
-		logger.Debug("starting update loop")
+		logger.Info("starting update loop")
 		var waitGroup sync.WaitGroup
 		stacksChannel := make(chan *swarmStack, len(stacks))
 
 		// Start worker pool
-		logger.Debug(fmt.Sprintf("worker count: %v", config.Concurrency))
+		logger.Debug(fmt.Sprintf("worker count: %d", config.Concurrency))
 		for range config.Concurrency {
 			go worker(stacksChannel, &waitGroup)
 		}
 
 		// Send stacks to workers
 		for _, swarmStack := range stacks {
-			logger.Debug(fmt.Sprintf("Queueing stack %v for update", swarmStack.name))
+			logger.Debug(fmt.Sprintf("Queueing stack %s for update", swarmStack.name))
 			waitGroup.Add(1)
 			stacksChannel <- swarmStack
 		}
@@ -38,8 +38,8 @@ func Run() {
 	}
 }
 
-func worker(stacks <-chan *swarmStack, waitGroup *sync.WaitGroup) {
-	for swarmStack := range stacks {
+func worker(workerStacks <-chan *swarmStack, waitGroup *sync.WaitGroup) {
+	for swarmStack := range workerStacks {
 		updateStackThread(swarmStack)
 		waitGroup.Done()
 	}
@@ -60,7 +60,7 @@ func updateStackThread(swarmStack *swarmStack) {
 
 	stackStatus[swarmStack.name].Error = ""
 	stackStatus[swarmStack.name].Revision = revision
-	logger.Debug(fmt.Sprintf("%s stack updates check done", swarmStack.name))
+	logger.Info(fmt.Sprintf("%s stack updates check done", swarmStack.name))
 }
 
 func GetStackStatus() map[string]*StackStatus {
