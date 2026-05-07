@@ -53,7 +53,8 @@ func LoadConfigs() (err error) {
 			return fmt.Errorf("could not load stacks file: %w", err)
 		}
 	}
-	return validateConfig()
+	validateConfig()
+	return nil
 }
 
 const defaultWorkers = 3
