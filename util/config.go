@@ -39,7 +39,7 @@ var Configs Config
 
 func LoadConfigs() (err error) {
 	configsPath := getConfigsPath()
-	Logger.Info(fmt.Sprintf("[Configs] path: %s", configsPath))
+	Logger.Info(fmt.Sprintf("using configuration path: %s", configsPath))
 	err = readConfig(configsPath)
 	if err != nil {
 		return fmt.Errorf("could not read configuration file: %w", err)

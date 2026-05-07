@@ -82,8 +82,10 @@ services:
       - CONFIGS_PATH=/app/configs
 ```
 
-> **NOTE:** due to how Docker Swarm works, it is better to use configs instead of bind mounts.
+> **NOTE**: due to how Docker Swarm works, it is better to use configs instead of bind mounts.
   But if you only have a single manager node, it's OK to use this feature.
+
+> **NOTE**: `CONFIGS_PATH` only relocates the YAML config files; the path set in `repos_path` is always relative to swarm-cd's working directory (`/app`).
 
 ## Manage Encrypted Secrets Using SOPS
 
