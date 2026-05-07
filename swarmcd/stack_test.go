@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-// External objects are ignored by the rotation
-func TestRotateExternalObjects(t *testing.T) {
+// Non-file objects are ignored by the rotation
+func TestRotateObjectsWithoutFile(t *testing.T) {
 	repo := &stackRepo{name: "test", path: "test", url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
 	stack := newSwarmStack("test", repo, "main", "docker-compose.yaml", nil, "", false)
 	objects := map[string]any{
