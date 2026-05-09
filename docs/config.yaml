@@ -1,8 +1,14 @@
 # SwarmCD configuration file refernce
 
-# The interval in seconds that SwarmCD 
-# waits everytime before pulling 
+# The interval in seconds that SwarmCD
+# waits everytime before pulling
 update_interval: 120
+
+# The amount of parallel threads for deploying stacks.
+# The sensible value depends on the setup to prevent
+# the swarm manager from overloading.
+# NOTE: stacks on the same repo are NOT parallelized.
+concurrency: 3
 
 # The path where SwarmCD will checkout repos
 repos_path: repos/
@@ -15,11 +21,11 @@ sops_secrets_discovery: true
 # and secret names
 auto_rotate: true
 
-# You can define repos here instead of 
+# You can define repos here instead of
 # defining a separate repos.yaml file
 repos:
 
-# You can define stacks here instead of 
+# You can define stacks here instead of
 # defining a separate stacks.yaml file
 stacks:
 

@@ -27,6 +27,7 @@ type RepoConfig struct {
 type Config struct {
 	ReposPath            string                  `mapstructure:"repos_path"`
 	UpdateInterval       int                     `mapstructure:"update_interval"`
+	Concurrency          int                     `mapstructure:"concurrency"`
 	AutoRotate           bool                    `mapstructure:"auto_rotate"`
 	StackConfigs         map[string]*StackConfig `mapstructure:"stacks"`
 	RepoConfigs          map[string]*RepoConfig  `mapstructure:"repos"`
@@ -60,8 +61,11 @@ func LoadConfigs() (err error) {
 			return fmt.Errorf("could not load global values file: %w", err)
 		}
 	}
-	return
+	validateConfig()
+	return nil
 }
+
+const defaultWorkers = 3
 
 func ReadConfig(configPath string) (err error) {
 	configViper := viper.New()
@@ -71,6 +75,7 @@ func ReadConfig(configPath string) (err error) {
 		configViper.SetConfigFile(configPath)
 	}
 	configViper.SetDefault("update_interval", 120)
+	configViper.SetDefault("concurrency", defaultWorkers)
 	configViper.SetDefault("repos_path", "repos")
 	configViper.SetDefault("auto_rotate", true)
 	configViper.SetDefault("sops_secrets_discovery", false)
@@ -117,4 +122,11 @@ func ReadGlobalValues(globalPath string) (err error) {
 		return
 	}
 	return globalViper.Unmarshal(&Configs.GlobalValues)
+}
+
+func validateConfig() {
+	if Configs.Concurrency <= 0 {
+		Logger.Warn(fmt.Sprintf("Invalid `config.concurrency value`, using default: %v", defaultWorkers))
+		Configs.Concurrency = defaultWorkers
+	}
 }
