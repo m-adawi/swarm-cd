@@ -9,8 +9,7 @@ import (
 
 func boolPtr(v bool) *bool { return &v }
 
-// resolveImageMode returns "always" when alwaysPull is true, "changed" otherwise.
-// The stack-level setting overrides the global config setting.
+// test all the possible combinations of config and stack AlwaysPullContainers settings.
 func TestResolveImageMode(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -18,10 +17,10 @@ func TestResolveImageMode(t *testing.T) {
 		stackPull      *bool
 		expectedResult string
 	}{
-		// Stack setting is unset: falls back to config
+		// Stack setting is unset: falls back to global config
 		{"config=false stack=unset", false, nil, "changed"},
 		{"config=true  stack=unset", true, nil, "always"},
-		// Stack setting is explicit: overrides config in both directions
+		// Stack setting is explicit: overrides global config
 		{"config=false stack=false", false, boolPtr(false), "changed"},
 		{"config=false stack=true", false, boolPtr(true), "always"},
 		{"config=true  stack=false", true, boolPtr(false), "changed"},

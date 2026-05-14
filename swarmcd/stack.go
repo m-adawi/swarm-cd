@@ -284,9 +284,9 @@ func (swarmStack *swarmStack) deployStack() error {
 	return nil
 }
 
+// Returns "always" when alwaysPullContainers is true, "changed" otherwise.
+// The stack-level setting overrides the global config setting.
 func (swarmStack *swarmStack) resolveImageMode() string {
-	// Determine effective alwaysPullContainers value
-	// Stack-level override takes precedence, fallback to global setting
 	alwaysPull := config.AlwaysPullContainers
 	if swarmStack.alwaysPullContainers != nil {
 		alwaysPull = *swarmStack.alwaysPullContainers
