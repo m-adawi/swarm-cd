@@ -59,14 +59,7 @@ func LoadConfigs() (err error) {
 		}
 	}
 	validateConfig()
-  return nil
-}
-
-func getConfigsPath() string {
-	if path := os.Getenv("CONFIGS_PATH"); path != "" {
-		return path
-	}
-	return "."
+	return nil
 }
 
 func getConfigsPath() string {
