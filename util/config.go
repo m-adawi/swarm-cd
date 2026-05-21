@@ -19,10 +19,12 @@ type StackConfig struct {
 }
 
 type RepoConfig struct {
-	Url          string
-	Username     string
-	Password     string
-	PasswordFile string `mapstructure:"password_file"`
+	Url              string
+	Username         string
+	Password         string
+	PasswordFile     string `mapstructure:"password_file"`
+	DefaultReference string `mapstructure:"default_reference"`
+	CertificateFile  string `mapstructure:"certificate_file"`
 }
 
 type Config struct {

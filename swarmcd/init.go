@@ -5,11 +5,9 @@ import (
 	"log/slog"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/m-adawi/swarm-cd/util"
 )
 
@@ -46,49 +44,16 @@ func Init() (err error) {
 func initRepos() error {
 	for repoName, repoConfig := range config.RepoConfigs {
 		repoPath := path.Join(config.ReposPath, repoName)
-		auth, err := createHTTPBasicAuth(repoName)
+		auth, err := createRepoAuth(repoName)
 		if err != nil {
-			return err
+			return fmt.Errorf("create auth for repo %q: %w", repoName, err)
 		}
-		repos[repoName], err = newStackRepo(repoName, repoPath, repoConfig.Url, auth)
+		repos[repoName], err = newStackRepo(repoName, repoPath, repoConfig.Url, repoConfig.DefaultReference, auth)
 		if err != nil {
-			return err
+			return fmt.Errorf("create stack repo %q: %w", repoName, err)
 		}
 	}
 	return nil
-}
-
-func createHTTPBasicAuth(repoName string) (*http.BasicAuth, error) {
-	repoConfig := config.RepoConfigs[repoName]
-	// assume repo is public and no auth is required
-	if repoConfig.Username == "" && repoConfig.Password == "" && repoConfig.PasswordFile == "" {
-		return nil, nil
-	}
-
-	if repoConfig.Username == "" {
-		return nil, fmt.Errorf("you must set username for the repo %s", repoName)
-	}
-
-	if repoConfig.Password == "" && repoConfig.PasswordFile == "" {
-		return nil, fmt.Errorf("you must set one of password or password_file properties for the repo %s", repoName)
-	}
-
-	var password string
-	if repoConfig.Password != "" {
-		password = repoConfig.Password
-	} else {
-		passwordBytes, err := os.ReadFile(repoConfig.PasswordFile)
-		if err != nil {
-			return nil, fmt.Errorf("could not read password file %s for repo %s", repoConfig.PasswordFile, repoName)
-		}
-		// trim newline and whitespaces
-		password = strings.TrimSpace(string(passwordBytes))
-	}
-
-	return &http.BasicAuth{
-		Username: repoConfig.Username,
-		Password: password,
-	}, nil
 }
 
 func initStacks() error {

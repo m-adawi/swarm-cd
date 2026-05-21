@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 )
 
 type stackRepo struct {
@@ -16,15 +16,16 @@ type stackRepo struct {
 	lock          *sync.Mutex
 	url           string
 	gitRepoObject *git.Repository
-	auth          *http.BasicAuth
+	auth          transport.AuthMethod
 	path          string
 }
 
-func newStackRepo(name string, path string, url string, auth *http.BasicAuth) (*stackRepo, error) {
+func newStackRepo(name, path, url, defaultReference string, auth transport.AuthMethod) (*stackRepo, error) {
 	var repo *git.Repository
 	cloneOptions := &git.CloneOptions{
-		URL:  url,
-		Auth: auth,
+		URL:           url,
+		Auth:          auth,
+		ReferenceName: plumbing.ReferenceName(defaultReference),
 	}
 	repo, err := git.PlainClone(path, false, cloneOptions)
 
