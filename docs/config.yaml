@@ -21,6 +21,15 @@ sops_secrets_discovery: true
 # and secret names
 auto_rotate: true
 
+# Whether to always pull container images when deploying stacks.
+# When set to true (default), SwarmCD uses `--resolve-image always`
+# which always queries the registry for images
+# and pulls new images if the SHA has changed.
+# When set to false, SwarmCD uses `--resolve-image changed`
+# which only pulls images when you change the tag in the stack file.
+# This is a global default that can be overridden per-stack.
+always_pull_containers: true
+
 # You can define repos here instead of
 # defining a separate repos.yaml file
 repos:

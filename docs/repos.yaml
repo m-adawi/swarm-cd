@@ -1,5 +1,5 @@
-# SwarmCD repos configuration refernce 
-# Here you define the repos you want to 
+# SwarmCD repos configuration refernce
+# Here you define the repos you want to
 # deploy stacks from
 
 # The keys being repo names which should be
@@ -12,7 +12,7 @@ repo-name:
   username: user
   # Password or personal token
   password: ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-  # Recommended to use over `password`. 
+  # Recommended to use over `password`.
   # You can mount your password or token
   # to SwarmCD using docker secrets and
   # set this to the path of the password

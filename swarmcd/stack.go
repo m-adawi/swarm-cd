@@ -19,31 +19,47 @@ import (
 )
 
 type swarmStack struct {
-	name            string
-	repo            *stackRepo
-	branch          string
-	composePath     string
-	sopsFiles       []string
-	valuesFile      string
-	discoverSecrets bool
-	globalValuesMap map[string]any
-	templatesPath   string
-	templated       bool
+	name                 string
+	repo                 *stackRepo
+	branch               string
+	composePath          string
+	sopsFiles            []string
+	valuesFile           string
+	discoverSecrets      bool
+	alwaysPullContainers *bool
+	globalValuesMap      map[string]any
+	templatesPath        string
+	templated            bool
 }
 
-func NewSwarmStack(name string, repo *stackRepo, branch string, composePath string, sopsFiles []string, valuesFile string, discoverSecrets bool, globalValuesMap map[string]any) *swarmStack {
+func NewSwarmStack(name string, repo *stackRepo, branch string, composePath string, sopsFiles []string, valuesFile string, discoverSecrets bool, alwaysPullContainers *bool, globalValuesMap map[string]any) *swarmStack {
 	return &swarmStack{
-		name:            name,
-		repo:            repo,
-		branch:          branch,
-		composePath:     composePath,
-		sopsFiles:       sopsFiles,
-		valuesFile:      valuesFile,
-		discoverSecrets: discoverSecrets,
-		globalValuesMap: globalValuesMap,
-		templatesPath:   "",
-		templated:       false,
+		name:                 name,
+		repo:                 repo,
+		branch:               branch,
+		composePath:          composePath,
+		sopsFiles:            sopsFiles,
+		valuesFile:           valuesFile,
+		discoverSecrets:      discoverSecrets,
+		alwaysPullContainers: alwaysPullContainers,
+		globalValuesMap:      globalValuesMap,
+		templatesPath:        "",
+		templated:            false,
 	}
+}
+
+func newSwarmStackFromConfig(name string, repo *stackRepo, stackConfig *util.StackConfig, globalSecretsDiscovery bool, globalValuesMap map[string]any) *swarmStack {
+	return NewSwarmStack(
+		name,
+		repo,
+		stackConfig.Branch,
+		stackConfig.ComposeFile,
+		stackConfig.SopsFiles,
+		stackConfig.ValuesFile,
+		globalSecretsDiscovery || stackConfig.SopsSecretsDiscovery,
+		stackConfig.AlwaysPullContainers,
+		globalValuesMap,
+	)
 }
 
 // Parameter should be "" to grab the value from the repository config (if available)
@@ -74,8 +90,6 @@ func (swarmStack *swarmStack) UpdateTemplatesPath(templatesPath string) {
 	if errors.Is(err, os.ErrPermission) {
 		log.Error("Cannot access template folder due to permission", "err", err, "folder", templatesPath)
 	}
-
-	return
 }
 
 func (swarmStack *swarmStack) updateStack() (revision string, err error) {
@@ -343,8 +357,9 @@ func (swarmStack *swarmStack) writeStack(composeMap map[string]any) error {
 func (swarmStack *swarmStack) deployStack() error {
 	cmd := stack.NewStackCommand(dockerCli)
 	cmd.SetArgs([]string{
-		"deploy", "--detach", "--with-registry-auth", "-c",
-		path.Join(swarmStack.repo.path, swarmStack.composePath),
+		"deploy", "--detach", "--with-registry-auth",
+		"--resolve-image", swarmStack.resolveImageMode(),
+		"-c", path.Join(swarmStack.repo.path, swarmStack.composePath),
 		swarmStack.name,
 	})
 	// To stop printing errors and
@@ -369,4 +384,17 @@ func ParseValuesFile(valuesFile string, source string) (map[string]any, error) {
 		return nil, fmt.Errorf("could not parse yaml from values file: %w", err)
 	}
 	return valuesMap, nil
+}
+
+// Returns "always" when alwaysPullContainers is true, "changed" otherwise.
+// The stack-level setting overrides the global config setting.
+func (swarmStack *swarmStack) resolveImageMode() string {
+	alwaysPull := config.AlwaysPullContainers
+	if swarmStack.alwaysPullContainers != nil {
+		alwaysPull = *swarmStack.alwaysPullContainers
+	}
+	if alwaysPull {
+		return "always"
+	}
+	return "changed"
 }

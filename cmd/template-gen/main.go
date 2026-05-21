@@ -69,6 +69,7 @@ func main() {
 		nil,
 		valueFile,
 		false,
+		nil,
 		globalValuesMap,
 	)
 
