@@ -1,0 +1,11 @@
+---
+version: '3.8'
+services:
+  foo:
+    image: foo
+    environment:
+      BAR: bar
+      BAZ: baz
+
+volumes:
+  {{ template "nfs_volume" (dict "name" "media") }}

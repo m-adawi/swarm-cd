@@ -19,10 +19,11 @@ type StackConfig struct {
 }
 
 type RepoConfig struct {
-	Url          string
-	Username     string
-	Password     string
-	PasswordFile string `mapstructure:"password_file"`
+	Url           string
+	Username      string
+	Password      string
+	PasswordFile  string `mapstructure:"password_file"`
+	TemplatesPath string `mapstructure:"templates_path"`
 }
 
 type Config struct {
@@ -35,6 +36,7 @@ type Config struct {
 	SopsSecretsDiscovery bool                    `mapstructure:"sops_secrets_discovery"`
 	Address              string                  `mapstructure:"address"`
 	AlwaysPullContainers bool                    `mapstructure:"always_pull_containers"`
+	GlobalValues         map[string]any          `mapstructure:"global_values"`
 }
 
 var Configs Config
@@ -42,7 +44,7 @@ var Configs Config
 func LoadConfigs() (err error) {
 	configsPath := getConfigsPath()
 	Logger.Info(fmt.Sprintf("using configuration path: %s", configsPath))
-	err = readConfig(configsPath)
+	err = ReadConfig(configsPath)
 	if err != nil {
 		return fmt.Errorf("could not read configuration file: %w", err)
 	}
@@ -58,6 +60,12 @@ func LoadConfigs() (err error) {
 			return fmt.Errorf("could not load stacks file: %w", err)
 		}
 	}
+	if Configs.GlobalValues == nil {
+		err = ReadGlobalValues("")
+		if err != nil {
+			return fmt.Errorf("could not load global values file: %w", err)
+		}
+	}
 	validateConfig()
 	return nil
 }
@@ -71,10 +79,19 @@ func getConfigsPath() string {
 
 const defaultWorkers = 3
 
-func readConfig(path string) (err error) {
+// ReadConfig loads the main config file. If configPath points to an existing
+// file it is used directly; otherwise it is treated as a directory to search.
+// An empty string falls back to the current directory.
+func ReadConfig(configPath string) (err error) {
 	configViper := viper.New()
 	configViper.SetConfigName("config")
-	configViper.AddConfigPath(path)
+	if configPath == "" {
+		configViper.AddConfigPath(".")
+	} else if info, statErr := os.Stat(configPath); statErr == nil && !info.IsDir() {
+		configViper.SetConfigFile(configPath)
+	} else {
+		configViper.AddConfigPath(configPath)
+	}
 	configViper.SetDefault("update_interval", 120)
 	configViper.SetDefault("concurrency", defaultWorkers)
 	configViper.SetDefault("repos_path", "repos")
@@ -109,6 +126,23 @@ func readStackConfigs(path string) (err error) {
 		return
 	}
 	return stacksViper.Unmarshal(&Configs.StackConfigs)
+}
+
+func ReadGlobalValues(globalPath string) (err error) {
+	globalViper := viper.New()
+	globalViper.SetConfigName("global_values")
+	globalViper.AddConfigPath(getConfigsPath())
+	if globalPath != "" {
+		globalViper.SetConfigFile(globalPath)
+	}
+	err = globalViper.ReadInConfig()
+	if err != nil {
+		if errors.As(err, &viper.ConfigFileNotFoundError{}) {
+			return nil
+		}
+		return
+	}
+	return globalViper.Unmarshal(&Configs.GlobalValues)
 }
 
 func validateConfig() {

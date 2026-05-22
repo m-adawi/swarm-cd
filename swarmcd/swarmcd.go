@@ -66,3 +66,12 @@ func updateStackThread(swarmStack *swarmStack) {
 func GetStackStatus() map[string]*StackStatus {
 	return stackStatus
 }
+
+func GetSwarmStack(stackName string) (*swarmStack, error) {
+	for _, elem := range stacks {
+		if elem.name == stackName {
+			return elem, nil
+		}
+	}
+	return nil, fmt.Errorf("Stack %s does not exist.", stackName)
+}

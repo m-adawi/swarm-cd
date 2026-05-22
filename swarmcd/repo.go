@@ -18,19 +18,20 @@ type stackRepo struct {
 	gitRepoObject *git.Repository
 	auth          *http.BasicAuth
 	path          string
+	templatesPath string
 }
 
-func newStackRepo(name string, path string, url string, auth *http.BasicAuth) (*stackRepo, error) {
+func newStackRepo(name string, repoPath string, url string, auth *http.BasicAuth, templatesPath string) (*stackRepo, error) {
 	var repo *git.Repository
 	cloneOptions := &git.CloneOptions{
 		URL:  url,
 		Auth: auth,
 	}
-	repo, err := git.PlainClone(path, false, cloneOptions)
+	repo, err := git.PlainClone(repoPath, false, cloneOptions)
 
 	if err != nil {
 		if errors.Is(err, git.ErrRepositoryAlreadyExists) {
-			repo, err = git.PlainOpen(path)
+			repo, err = git.PlainOpen(repoPath)
 			if err != nil {
 				return nil, fmt.Errorf("could not open existing repo %s: %w", name, err)
 			}
@@ -44,13 +45,15 @@ func newStackRepo(name string, path string, url string, auth *http.BasicAuth) (*
 			return nil, fmt.Errorf("could not clone repo %s: %w", name, err)
 		}
 	}
+
 	return &stackRepo{
 		name:          name,
-		path:          path,
+		path:          repoPath,
 		url:           url,
 		auth:          auth,
 		lock:          &sync.Mutex{},
 		gitRepoObject: repo,
+		templatesPath: templatesPath,
 	}, nil
 }
 

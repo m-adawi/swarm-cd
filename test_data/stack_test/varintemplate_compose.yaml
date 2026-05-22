@@ -1,0 +1,13 @@
+---
+version: '3.8'
+services:
+  foo:
+    image: {{ template "makeimage" .Values.bar }}
+    environment:
+      BAR: bar
+      BAZ: baz
+
+volumes:
+  {{ template "nfs_volume" (dict "name" .Values.onlyinglobals) }}
+  {{ template "nfs_volume" (dict "name" .Values.onlyinvalues) }}
+  {{ template "nfs_volume" (dict "name" .Values.baz) }}
