@@ -1,0 +1,72 @@
+{
+  "Project Alpha": [
+    {
+      "ID": "alpha-web", "Name": "alpha_web", "Image": "nginx:1.27", "Mode": "replicated",
+      "RunningTasks": 3, "DesiredTasks": 3, "FailedTasks": 0, "Health": "healthy",
+      "Secrets": [], "Configs": [],
+      "Tasks": [
+        { "ID": "alpha-web-1", "Slot": 1, "NodeID": "node-1", "State": "running", "DesiredState": "running", "Error": "", "ContainerID": "a1b2c3" },
+        { "ID": "alpha-web-2", "Slot": 2, "NodeID": "node-2", "State": "running", "DesiredState": "running", "Error": "", "ContainerID": "d4e5f6" },
+        { "ID": "alpha-web-3", "Slot": 3, "NodeID": "node-3", "State": "running", "DesiredState": "running", "Error": "", "ContainerID": "g7h8i9" }
+      ]
+    },
+    {
+      "ID": "alpha-api", "Name": "alpha_api", "Image": "ghcr.io/acme/api:v1.0.1", "Mode": "replicated",
+      "RunningTasks": 2, "DesiredTasks": 2, "FailedTasks": 0, "Health": "healthy",
+      "Secrets": ["alpha-api-token"], "Configs": [],
+      "Tasks": [
+        { "ID": "alpha-api-1", "Slot": 1, "NodeID": "node-1", "State": "running", "DesiredState": "running", "Error": "", "ContainerID": "aa11bb" },
+        { "ID": "alpha-api-2", "Slot": 2, "NodeID": "node-2", "State": "running", "DesiredState": "running", "Error": "", "ContainerID": "cc22dd" }
+      ]
+    },
+    {
+      "ID": "alpha-worker", "Name": "alpha_worker", "Image": "ghcr.io/acme/worker:v1.0.1", "Mode": "replicated",
+      "RunningTasks": 1, "DesiredTasks": 2, "FailedTasks": 0, "Health": "progressing",
+      "Secrets": [], "Configs": ["alpha-worker-config"],
+      "Tasks": [
+        { "ID": "alpha-worker-1", "Slot": 1, "NodeID": "node-3", "State": "running", "DesiredState": "running", "Error": "", "ContainerID": "ee33ff" },
+        { "ID": "alpha-worker-2", "Slot": 2, "NodeID": "node-2", "State": "starting", "DesiredState": "running", "Error": "", "ContainerID": "" }
+      ]
+    }
+  ],
+  "Project Beta": [
+    {
+      "ID": "beta-web", "Name": "beta_web", "Image": "caddy:2", "Mode": "replicated",
+      "RunningTasks": 0, "DesiredTasks": 2, "FailedTasks": 1, "Health": "degraded",
+      "Secrets": ["beta-tls-cert", "beta-tls-key"], "Configs": [],
+      "Tasks": [
+        { "ID": "beta-web-1", "Slot": 1, "NodeID": "node-1", "State": "failed", "DesiredState": "running", "Error": "task: non-zero exit (1)", "ContainerID": "" },
+        { "ID": "beta-web-2", "Slot": 2, "NodeID": "node-2", "State": "starting", "DesiredState": "running", "Error": "", "ContainerID": "" }
+      ]
+    },
+    {
+      "ID": "beta-db", "Name": "beta_db", "Image": "postgres:16", "Mode": "replicated",
+      "RunningTasks": 1, "DesiredTasks": 1, "FailedTasks": 0, "Health": "healthy",
+      "Secrets": ["beta-db-password"], "Configs": ["beta-db-config"],
+      "Tasks": [
+        { "ID": "beta-db-1", "Slot": 1, "NodeID": "node-3", "State": "running", "DesiredState": "running", "Error": "", "ContainerID": "1234ab" }
+      ]
+    }
+  ],
+  "Project Gamma": [
+    {
+      "ID": "gamma-agent", "Name": "gamma_agent", "Image": "prom/node-exporter:v1.8.2", "Mode": "global",
+      "RunningTasks": 4, "DesiredTasks": 4, "FailedTasks": 0, "Health": "healthy",
+      "Secrets": [], "Configs": [],
+      "Tasks": [
+        { "ID": "gamma-agent-1", "Slot": 0, "NodeID": "node-1", "State": "running", "DesiredState": "running", "Error": "", "ContainerID": "ga01" },
+        { "ID": "gamma-agent-2", "Slot": 0, "NodeID": "node-2", "State": "running", "DesiredState": "running", "Error": "", "ContainerID": "ga02" },
+        { "ID": "gamma-agent-3", "Slot": 0, "NodeID": "node-3", "State": "running", "DesiredState": "running", "Error": "", "ContainerID": "ga03" },
+        { "ID": "gamma-agent-4", "Slot": 0, "NodeID": "node-4", "State": "running", "DesiredState": "running", "Error": "", "ContainerID": "ga04" }
+      ]
+    },
+    {
+      "ID": "gamma-proxy", "Name": "gamma_proxy", "Image": "traefik:v3.1", "Mode": "replicated",
+      "RunningTasks": 1, "DesiredTasks": 1, "FailedTasks": 0, "Health": "healthy",
+      "Secrets": [], "Configs": ["gamma-proxy-config"],
+      "Tasks": [
+        { "ID": "gamma-proxy-1", "Slot": 1, "NodeID": "node-1", "State": "running", "DesiredState": "running", "Error": "", "ContainerID": "gp01" }
+      ]
+    }
+  ]
+}
