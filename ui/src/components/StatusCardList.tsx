@@ -3,7 +3,11 @@ import React, { useEffect, useState } from "react"
 import { StackStatus } from "../hooks/useFetchStatuses"
 import StatusCard from "./StatusCard"
 
-function StatusCardList({ statuses, query }: Readonly<{ statuses: StackStatus[]; query: string }>): React.ReactElement {
+function StatusCardList({
+  statuses,
+  query,
+  onSelect
+}: Readonly<{ statuses: StackStatus[]; query: string; onSelect: (name: string) => void }>): React.ReactElement {
   const [filteredStatuses, setFilteredStatuses] = useState<StackStatus[]>(statuses)
 
   useEffect(() => {
@@ -21,7 +25,14 @@ function StatusCardList({ statuses, query }: Readonly<{ statuses: StackStatus[];
         </Text>
       ) : (
         filteredStatuses.map((item, index) => (
-          <StatusCard key={index} name={item.Name} error={item.Error} revision={item.Revision} repoURL={item.RepoURL} />
+          <StatusCard
+            key={index}
+            name={item.Name}
+            error={item.Error}
+            revision={item.Revision}
+            repoURL={item.RepoURL}
+            onSelect={onSelect}
+          />
         ))
       )}
     </>

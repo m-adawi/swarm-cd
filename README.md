@@ -262,6 +262,85 @@ secrets:
 ```
 Note: if running swarmcd as a user other than root, modify the docker config mount path to match.
 
+## Web UI
+
+SwarmCD serves a small web dashboard (built with React and embedded into the binary)
+on its configured `address`. The dashboard is available at `/ui` (the root path `/`
+redirects there) and lists every managed stack with its current revision, source repo,
+last reconciliation error, and a status icon (healthy / degraded).
+
+### Stack resource graph
+
+Click a stack to open an ArgoCD-style, **draggable** resource graph of that stack:
+
+![SwarmCD stack resource graph](assets/stack-graph.png)
+
+```
+stack ──▶ service ──▶ task (container)
+            service ╌╌▶ secret / config   (dashed)
+```
+
+- **Service nodes** show the image, mode (`replicated`/`global`), running/desired replica
+  count, a failed-task count when any tasks have failed, and a **health icon** (a heart for
+  healthy services).
+- **Task nodes** are the individual live containers, colored by their Swarm task state
+  (running / failed / transitional), with the node id and any error message.
+- **Secret/config nodes** are linked with a **dashed** edge to the services that reference them.
+- Nodes are **draggable**; positions are preserved while the graph refreshes.
+
+Service health:
+
+| Health | Meaning |
+|--------|---------|
+| 💚 Healthy | all desired replicas are running |
+| ⚠️ Progressing | some replicas are starting / converging (or none desired yet) |
+| 💔 Degraded | replicas are desired but none are running |
+
+A degraded stack — a failed task (with its error) and the secrets/configs each service references via dashed edges:
+
+![SwarmCD degraded stack graph](assets/stack-graph-degraded.png)
+
+### API: stack services
+
+The graph is backed by a JSON endpoint:
+
+```
+GET /stacks/:name/services
+```
+
+| Status | When |
+|--------|------|
+| `200` | returns a JSON array of the stack's services |
+| `404` | the stack is not managed by SwarmCD |
+| `500` | the Docker daemon could not be queried |
+
+Example response:
+
+```json
+[
+  {
+    "ID": "abc123",
+    "Name": "nginx_web",
+    "Image": "nginx:1.27",
+    "Mode": "replicated",
+    "RunningTasks": 3,
+    "DesiredTasks": 3,
+    "FailedTasks": 0,
+    "Health": "healthy",
+    "Tasks": [
+      { "ID": "t1", "Slot": 1, "NodeID": "node-1", "State": "running", "DesiredState": "running", "Error": "", "ContainerID": "c0ffee" }
+    ],
+    "Secrets": ["tls-cert"],
+    "Configs": []
+  }
+]
+```
+
+The service list is read live from the Docker daemon (services labelled
+`com.docker.stack.namespace=<stack>`). `Tasks` are the stack's live containers
+(desired-state `running`, queried via the Docker task API); `Secrets`/`Configs` are the
+names each service references. The data reflects the actual cluster state.
+
 ## Documentation
 
 See [docs](https://github.com/m-adawi/swarm-cd/blob/main/docs).

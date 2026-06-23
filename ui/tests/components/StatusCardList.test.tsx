@@ -10,19 +10,19 @@ describe("StatusCardList", () => {
   ]
 
   it("should render no statuses if the list of statuses is empty", () => {
-    render(<StatusCardList statuses={[]} query="" />)
+    render(<StatusCardList statuses={[]} query="" onSelect={() => {}} />)
     expect(screen.getByText(/No items/i)).toBeInTheDocument()
   })
 
   it("should render a list of statuses", () => {
-    render(<StatusCardList statuses={statuses} query="" />)
+    render(<StatusCardList statuses={statuses} query="" onSelect={() => {}} />)
     for (const status of statuses) {
       expect(screen.getByText(status.Name)).toBeInTheDocument()
     }
   })
 
   it("should filter out the whole list of statuses if query is not found", () => {
-    render(<StatusCardList statuses={statuses} query="NOT FOUND!!!" />)
+    render(<StatusCardList statuses={statuses} query="NOT FOUND!!!" onSelect={() => {}} />)
     for(const query of ["Foobar", "FooFoo", "Boobaz"]) {
       expect(screen.queryByText(query)).not.toBeInTheDocument()
     }
@@ -37,7 +37,7 @@ describe("StatusCardList", () => {
     { query: "https://", expectedVisible: ["Foobar", "FooFoo", "Boobaz"], expectedHidden: [] },
     { query: "Oh no!", expectedVisible: ["Boobaz"], expectedHidden: ["Foobar", "FooFoo"] }
   ])("should filter a list of statuses by query '$query'", ({ query, expectedVisible, expectedHidden }) => {
-    render(<StatusCardList statuses={statuses} query={query} />)
+    render(<StatusCardList statuses={statuses} query={query} onSelect={() => {}} />)
 
     expectedVisible.forEach(name => {
       expect(screen.queryByText(name)).toBeInTheDocument()
