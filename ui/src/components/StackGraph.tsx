@@ -1,4 +1,4 @@
-import { Box, Text } from "@chakra-ui/react"
+import { Box, Text, useColorMode } from "@chakra-ui/react"
 import {
   Background,
   Controls,
@@ -120,13 +120,17 @@ function StackGraph({ stackName, services }: Readonly<{ stackName: string; servi
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>(built.nodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(built.edges)
   const lastSignature = useRef<string>(nodeSignature(built.nodes))
+  // Sync React Flow's theme with Chakra's color mode — otherwise React Flow
+  // stays in its default light theme and edges/controls/background are
+  // low-contrast (nearly invisible) in dark mode.
+  const { colorMode } = useColorMode()
 
   useEffect(() => {
     const signature = nodeSignature(built.nodes)
     if (signature !== lastSignature.current) {
       // Structure changed (services/tasks/secrets added or removed) → rebuild layout.
       lastSignature.current = signature
-      console.debug("[StackGraph] rebuild", stackName, "nodes", built.nodes.length, "edges", built.edges.length)
+      console.debug("[FIX][StackGraph] rebuild", stackName, "colorMode", colorMode, "nodes", built.nodes.length, "edges", built.edges.length)
       setNodes(built.nodes)
       setEdges(built.edges)
       return
@@ -139,7 +143,7 @@ function StackGraph({ stackName, services }: Readonly<{ stackName: string; servi
         return data ? { ...node, data } : node
       })
     )
-  }, [built, stackName, setNodes, setEdges])
+  }, [built, stackName, colorMode, setNodes, setEdges])
 
   if (services.length === 0) {
     return (
@@ -157,6 +161,7 @@ function StackGraph({ stackName, services }: Readonly<{ stackName: string; servi
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
+        colorMode={colorMode}
         nodesDraggable
         fitView
       >

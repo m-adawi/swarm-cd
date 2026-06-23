@@ -1,3 +1,4 @@
+import { ChakraProvider, extendTheme } from "@chakra-ui/react"
 import { render, screen } from "@testing-library/react"
 import StackGraph from "../../src/components/StackGraph"
 import { ServiceStatus, TaskStatus } from "../../src/hooks/useFetchStackServices"
@@ -8,12 +9,14 @@ import { ServiceStatus, TaskStatus } from "../../src/hooks/useFetchStackServices
 vi.mock("@xyflow/react", () => ({
   ReactFlow: ({
     nodes,
-    edges
+    edges,
+    colorMode
   }: {
     nodes: ReadonlyArray<{ id: string; type?: string }>
     edges: ReadonlyArray<{ id: string; style?: { strokeDasharray?: string } }>
+    colorMode?: string
   }) => (
-    <div data-testid="reactflow">
+    <div data-testid="reactflow" data-colormode={colorMode}>
       {nodes.map(node => (
         <div key={node.id} data-testid="rf-node" data-type={node.type}>
           {node.id}
@@ -76,5 +79,18 @@ describe("StackGraph", () => {
   it("shows an empty state when there are no services", () => {
     render(<StackGraph stackName="demo" services={[]} />)
     expect(screen.getByText(/no services/i)).toBeInTheDocument()
+  })
+
+  it("forwards Chakra's dark color mode to React Flow", () => {
+    localStorage.setItem("chakra-ui-color-mode", "dark")
+    const darkTheme = extendTheme({ config: { initialColorMode: "dark", useSystemColorMode: false } })
+
+    render(
+      <ChakraProvider theme={darkTheme}>
+        <StackGraph stackName="demo" services={services} />
+      </ChakraProvider>
+    )
+
+    expect(screen.getByTestId("reactflow")).toHaveAttribute("data-colormode", "dark")
   })
 })
