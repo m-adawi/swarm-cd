@@ -26,8 +26,14 @@ Then we define the stack in `stacks.yaml`
 nginx:
   repo: swarm-cd-example
   branch: main
-  compose_file: nginx/compose.yaml
+  compose_files:
+    - nginx/compose.yaml
+    - nginx/compose.prod.yaml
 ```
+
+`compose_files` is the canonical field and supports one or more files merged in listed order
+(same behavior as multiple `-c/--compose-file` flags in `docker stack deploy`).
+`compose_file` is still accepted for backward compatibility, but cannot be used together with `compose_files`.
 
 And finally, we deploy SwarmCD to the cluster
 using the following docker-compose file:
@@ -103,12 +109,13 @@ setting the property`sops_files` in a stack defenition.
 nginx-ssl:
     repo: swarm-cd-example
     branch: main
-    compose_file: nginx-ssl/compose.yaml
-    sops_files: 
+    compose_files:
+      - nginx-ssl/compose.yaml
+    sops_files:
       - nginx-ssl/secrets/www.example.com.crt
       - nginx-ssl/secrets/www.example.com.key
-```
 
+```
 Then you need to set the SOPS environment variables that are required
 to decrypt the files.
 Depending on the backend you used for sops encryption, the configuration
