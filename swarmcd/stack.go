@@ -65,7 +65,7 @@ func (swarmStack *swarmStack) updateStack() (revision string, err error) {
 	log.Debug("changes pulled", "revision", revision)
 
 	log.Debug("building templating function...")
-	templatingFunction, err := swarmStack.BuildTemplatingFunction()
+	templatingFunction, err := swarmStack.buildTemplatingFunction()
 	if err != nil {
 		return
 	}
@@ -122,9 +122,9 @@ func (swarmStack *swarmStack) composeFilePaths() []string {
 	return composeFiles
 }
 
-type TemplatingFunction func(composeFile string, composeFileBytes []byte) ([]byte, error)
+type templatingFunction func(composeFile string, composeFileBytes []byte) ([]byte, error)
 
-func (swarmStack *swarmStack) BuildTemplatingFunction() (TemplatingFunction, error) {
+func (swarmStack *swarmStack) buildTemplatingFunction() (templatingFunction, error) {
 	if swarmStack.valuesFile != "" {
 		valuesMap, err := swarmStack.readValuesFile()
 		if err != nil {
@@ -159,7 +159,7 @@ type composeArtifact struct {
 	composeMap map[string]any
 }
 
-func readComposeArtifacts(composeFilePaths []string, templatingFunction TemplatingFunction) ([]composeArtifact, error) {
+func readComposeArtifacts(composeFilePaths []string, templatingFunction templatingFunction) ([]composeArtifact, error) {
 	composeArtifacts := make([]composeArtifact, 0, len(composeFilePaths))
 	for _, composeFile := range composeFilePaths {
 		composeMap, err := ReadStackFile(composeFile, templatingFunction)
@@ -174,7 +174,7 @@ func readComposeArtifacts(composeFilePaths []string, templatingFunction Templati
 	return composeArtifacts, nil
 }
 
-func ReadStackFile(composeFile string, templatingFunction TemplatingFunction) (map[string]any, error) {
+func ReadStackFile(composeFile string, templatingFunction templatingFunction) (map[string]any, error) {
 	composeFileBytes, err := os.ReadFile(composeFile)
 	if err != nil {
 		return nil, fmt.Errorf("could not read compose file %s: %w", composeFile, err)
