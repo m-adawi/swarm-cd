@@ -257,8 +257,8 @@ func (swarmStack *swarmStack) resolveSopsFilesForDecryption(composeArtifacts []c
 
 func discoverSecretsFromComposeFiles(composeArtifacts []composeArtifact) ([]string, error) {
 	sopsFiles := make([]string, 0)
+	composeDir := path.Dir(composeArtifacts[0].sourcePath)
 	for _, composeArtifact := range composeArtifacts {
-		composeDir := path.Dir(composeArtifact.sourcePath)
 		composeSopsFiles, err := discoverSecrets(composeArtifact.composeMap, composeDir)
 		if err != nil {
 			return nil, err

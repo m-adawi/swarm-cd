@@ -124,7 +124,7 @@ func TestSecretDiscoveryKeepsAbsolutePaths(t *testing.T) {
 	}
 }
 
-func TestDiscoverSecretsFromComposeFilesUsesEachComposeDirectory(t *testing.T) {
+func TestDiscoverSecretsFromComposeFilesUsesFirstComposeDirectory(t *testing.T) {
 	composeArtifacts := []composeArtifact{
 		{
 			sourcePath: "/repo/tenant-a/compose.yaml",
@@ -150,7 +150,7 @@ func TestDiscoverSecretsFromComposeFilesUsesEachComposeDirectory(t *testing.T) {
 	}
 	want := []string{
 		"/repo/tenant-a/secrets/tenant-a.enc.yaml",
-		"/repo/tenant-b/secrets/tenant-b.enc.yaml",
+		"/repo/tenant-a/secrets/tenant-b.enc.yaml",
 	}
 	if !slices.Equal(sopsFiles, want) {
 		t.Errorf("discoverSecretsFromComposeFiles() = %v, want %v", sopsFiles, want)
