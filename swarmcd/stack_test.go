@@ -158,7 +158,7 @@ func TestDiscoverSecretsFromComposeFilesUsesFirstComposeDirectory(t *testing.T) 
 }
 
 func TestResolveSopsFilesForDecryptionDeduplicatesDiscoveredPaths(t *testing.T) {
-	repoPath := t.TempDir()
+	repoPath := "repos/repo"
 	repo := &stackRepo{name: "test", path: repoPath, url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
 	stack := newSwarmStack("test", repo, "main", []string{"compose-a.yaml", "compose-b.yaml"}, nil, "", true, nil)
 

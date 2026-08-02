@@ -243,7 +243,7 @@ func (swarmStack *swarmStack) resolveSopsFilesForDecryption(composeArtifacts []c
 	seen := make(map[string]struct{}, len(sopsFiles))
 	for _, sopsFile := range sopsFiles {
 		secretFilePath := sopsFile
-		if !path.IsAbs(secretFilePath) {
+		if !swarmStack.discoverSecrets && !path.IsAbs(secretFilePath) {
 			secretFilePath = path.Join(swarmStack.repo.path, secretFilePath)
 		}
 		if _, ok := seen[secretFilePath]; ok {
