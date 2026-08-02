@@ -104,7 +104,14 @@ func TestValidateConfigComposeFilesRules(t *testing.T) {
 				ComposeFile:  "compose.yaml",
 				ComposeFiles: []string{"base.yaml", "prod.yaml"},
 			},
-			wantError: "use either compose_file or compose_files, not both",
+			wantError: "use either compose_file or compose_files, but not both",
+		},
+		{
+			name: "none of legacy and canonical fields are set",
+			stack: StackConfig{
+				ComposeFile:  "",
+			},
+			wantError: "use either compose_file or compose_files, but not both",
 		},
 		{
 			name: "compose files list is empty",

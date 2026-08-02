@@ -133,8 +133,8 @@ func validateConfig() error {
 		}
 		legacyComposeSet := strings.TrimSpace(stackConfig.ComposeFile) != ""
 		canonicalComposeSet := stackConfig.ComposeFiles != nil
-		if legacyComposeSet && canonicalComposeSet {
-			return fmt.Errorf("invalid stacks config for %s: use either compose_file or compose_files, not both", stackName)
+		if legacyComposeSet == canonicalComposeSet {
+			return fmt.Errorf("invalid stacks config for %s: use either compose_file or compose_files, but not both", stackName)
 		}
 		if canonicalComposeSet {
 			if len(stackConfig.ComposeFiles) == 0 {
