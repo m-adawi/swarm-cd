@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/m-adawi/swarm-cd/util"
-	"github.com/stretchr/testify/require"
 )
 
 // test all the possible combinations of config and stack AlwaysPullContainers settings.
@@ -60,8 +59,9 @@ func TestRotateObjectsWithoutFile(t *testing.T) {
 			"driver": "my-driver", "labels": map[string]string{"my_option": "value"},
 		},
 	}
-	err := stack.rotateObjects(objects, "secrets", t.TempDir())
-	require.NoError(t, err)
+	if err := stack.rotateObjects(objects, "secrets", t.TempDir()); err != nil {
+		t.Fatalf("rotateObjects() error: %v", err)
+	}
 }
 
 // Secrets are discovered, external secrets are ignored.
@@ -83,11 +83,17 @@ secrets:
       my_option: value
 `)
 	composeMap, err := parseStackString(stackString)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("parseStackString() error: %v", err)
+	}
 
 	sopsFiles, err := discoverSecrets(composeMap, "stacks")
-	require.NoError(t, err)
-	require.Equal(t, []string{"stacks/secrets/secret.yaml"}, sopsFiles)
+	if err != nil {
+		t.Fatalf("discoverSecrets() error: %v", err)
+	}
+	if !slices.Equal(sopsFiles, []string{"stacks/secrets/secret.yaml"}) {
+		t.Errorf("discoverSecrets() = %v, want %v", sopsFiles, []string{"stacks/secrets/secret.yaml"})
+	}
 }
 
 // Secret file paths that are already absolute stay absolute.
@@ -99,13 +105,23 @@ func TestSecretDiscoveryKeepsAbsolutePaths(t *testing.T) {
     file: secrets/relative.yaml
 `)
 	composeMap, err := parseStackString(stackString)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("parseStackString() error: %v", err)
+	}
 
 	sopsFiles, err := discoverSecrets(composeMap, "stacks")
-	require.NoError(t, err)
-	require.Len(t, sopsFiles, 2)
-	require.True(t, slices.Contains(sopsFiles, "/run/secrets/absolute.yaml"))
-	require.True(t, slices.Contains(sopsFiles, "stacks/secrets/relative.yaml"))
+	if err != nil {
+		t.Fatalf("discoverSecrets() error: %v", err)
+	}
+	if len(sopsFiles) != 2 {
+		t.Fatalf("discoverSecrets() len = %d, want 2", len(sopsFiles))
+	}
+	if !slices.Contains(sopsFiles, "/run/secrets/absolute.yaml") {
+		t.Errorf("discoverSecrets() = %v, missing %q", sopsFiles, "/run/secrets/absolute.yaml")
+	}
+	if !slices.Contains(sopsFiles, "stacks/secrets/relative.yaml") {
+		t.Errorf("discoverSecrets() = %v, missing %q", sopsFiles, "stacks/secrets/relative.yaml")
+	}
 }
 
 func TestDiscoverSecretsFromComposeFilesUsesEachComposeDirectory(t *testing.T) {
@@ -129,11 +145,16 @@ func TestDiscoverSecretsFromComposeFilesUsesEachComposeDirectory(t *testing.T) {
 	}
 
 	sopsFiles, err := discoverSecretsFromComposeFiles(composeArtifacts)
-	require.NoError(t, err)
-	require.Equal(t, []string{
+	if err != nil {
+		t.Fatalf("discoverSecretsFromComposeFiles() error: %v", err)
+	}
+	want := []string{
 		"/repo/tenant-a/secrets/tenant-a.enc.yaml",
 		"/repo/tenant-b/secrets/tenant-b.enc.yaml",
-	}, sopsFiles)
+	}
+	if !slices.Equal(sopsFiles, want) {
+		t.Errorf("discoverSecretsFromComposeFiles() = %v, want %v", sopsFiles, want)
+	}
 }
 
 func TestResolveSopsFilesForDecryptionDeduplicatesDiscoveredPaths(t *testing.T) {
@@ -161,14 +182,21 @@ func TestResolveSopsFilesForDecryptionDeduplicatesDiscoveredPaths(t *testing.T) 
 	}
 
 	resolvedPaths, err := stack.resolveSopsFilesForDecryption(composeArtifacts)
-	require.NoError(t, err)
-	require.Equal(t, []string{path.Join(repoPath, "tenant", "secrets", "shared.enc.yaml")}, resolvedPaths)
+	if err != nil {
+		t.Fatalf("resolveSopsFilesForDecryption() error: %v", err)
+	}
+	want := []string{path.Join(repoPath, "tenant", "secrets", "shared.enc.yaml")}
+	if !slices.Equal(resolvedPaths, want) {
+		t.Errorf("resolveSopsFilesForDecryption() = %v, want %v", resolvedPaths, want)
+	}
 }
 
 func TestWriteDeploymentArtifactUsesSourceComposeDirectory(t *testing.T) {
 	repoPath := t.TempDir()
 	composeDir := path.Join(repoPath, "tenant")
-	require.NoError(t, os.MkdirAll(composeDir, 0o755))
+	if err := os.MkdirAll(composeDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll() error: %v", err)
+	}
 
 	repo := &stackRepo{name: "test", path: repoPath, url: "", auth: nil, lock: &sync.Mutex{}, gitRepoObject: nil}
 	stack := newSwarmStack("test", repo, "main", []string{"tenant/compose.yaml"}, nil, "", false, nil)
@@ -178,13 +206,21 @@ func TestWriteDeploymentArtifactUsesSourceComposeDirectory(t *testing.T) {
 			"app": map[string]any{"image": "nginx"},
 		},
 	}, path.Join(composeDir, "compose.yaml"))
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("writeDeploymentArtifact() error: %v", err)
+	}
 	t.Cleanup(func() { _ = os.Remove(artifactPath) })
 
-	require.Equal(t, composeDir, path.Dir(artifactPath))
+	if got := path.Dir(artifactPath); got != composeDir {
+		t.Errorf("writeDeploymentArtifact() dir = %q, want %q", got, composeDir)
+	}
 	artifactInfo, err := os.Stat(artifactPath)
-	require.NoError(t, err)
-	require.False(t, artifactInfo.IsDir())
+	if err != nil {
+		t.Fatalf("os.Stat() error: %v", err)
+	}
+	if artifactInfo.IsDir() {
+		t.Errorf("writeDeploymentArtifact() artifact %q is a directory", artifactPath)
+	}
 }
 
 func TestDeployStackArgsPreservesConfiguredOrderAndRepeats(t *testing.T) {
@@ -196,12 +232,15 @@ func TestDeployStackArgsPreservesConfiguredOrderAndRepeats(t *testing.T) {
 	stack := newSwarmStack("test-stack", repo, "main", []string{"a.yaml", "b.yaml"}, nil, "", false, nil)
 
 	args := stack.deployStackArgs([]string{"a.yaml", "b.yaml", "a.yaml"})
-	require.Equal(t, []string{
+	want := []string{
 		"deploy", "--detach", "--with-registry-auth",
 		"--resolve-image", "always",
 		"-c", "a.yaml",
 		"-c", "b.yaml",
 		"-c", "a.yaml",
 		"test-stack",
-	}, args)
+	}
+	if !slices.Equal(args, want) {
+		t.Errorf("deployStackArgs() = %v, want %v", args, want)
+	}
 }
