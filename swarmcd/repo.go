@@ -63,6 +63,12 @@ func (repo *stackRepo) pullChanges(branch string) (revision string, err error) {
 		return "", fmt.Errorf("could not get %s repo worktree: %w", repo.name, err)
 	}
 
+	log.Debug("removing untracked changes...")
+	err = workTree.Clean(&git.CleanOptions{Dir: true})
+	if err != nil {
+		log.Warn("could not cleanup repo worktree", "error", err)
+	}
+
 	log.Debug("checking out branch...")
 	err = workTree.Checkout(&git.CheckoutOptions{
 		Branch: plumbing.ReferenceName("refs/remotes/origin/" + branch),

@@ -11,12 +11,18 @@ stack-name:
   # The repo branch to checkout from the stack repo
   # before deploying or updating stack
   branch: main
-  # The path to the docker compose file where stack
-  # is defined
-  compose_file: /path/to/compose.yaml
+  # Canonical field: ordered list of compose files
+  # passed to `docker stack deploy -c` in this order.
+  # Later files override earlier ones.
+  compose_files:
+    - /path/to/base.compose.yaml
+    - /path/to/override.compose.yaml
+  # Legacy fallback field (backward compatibility only).
+  # Do not set together with compose_files.
+  # compose_file: /path/to/compose.yaml
   # Path to values file to use when rendering
-  # compose file as a Go template. If empty, compose
-  # file will be treated as a regular compose file
+  # compose files as Go templates. If empty, compose
+  # files are treated as regular compose files.
   values_file: /path/to/values.yaml
   # Paths to files encrypted using sops to decrypt
   # before updating stack

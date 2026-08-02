@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -12,10 +13,21 @@ type StackConfig struct {
 	Repo                 string
 	Branch               string
 	ComposeFile          string   `mapstructure:"compose_file"`
+	ComposeFiles         []string `mapstructure:"compose_files"`
 	ValuesFile           string   `mapstructure:"values_file"`
 	SopsFiles            []string `mapstructure:"sops_files"`
 	SopsSecretsDiscovery bool     `mapstructure:"sops_secrets_discovery"`
 	AlwaysPullContainers *bool    `mapstructure:"always_pull_containers"`
+}
+
+func (stackConfig *StackConfig) ComposeFileChain() []string {
+	if len(stackConfig.ComposeFiles) > 0 {
+		return stackConfig.ComposeFiles
+	}
+	if stackConfig.ComposeFile != "" {
+		return []string{stackConfig.ComposeFile}
+	}
+	return nil
 }
 
 type RepoConfig struct {
@@ -58,8 +70,7 @@ func LoadConfigs() (err error) {
 			return fmt.Errorf("could not load stacks file: %w", err)
 		}
 	}
-	validateConfig()
-	return nil
+	return validateConfig()
 }
 
 func getConfigsPath() string {
@@ -111,9 +122,30 @@ func readStackConfigs(path string) (err error) {
 	return stacksViper.Unmarshal(&Configs.StackConfigs)
 }
 
-func validateConfig() {
+func validateConfig() error {
 	if Configs.Concurrency <= 0 {
 		Logger.Warn(fmt.Sprintf("Invalid `config.concurrency value`, using default: %v", defaultWorkers))
 		Configs.Concurrency = defaultWorkers
 	}
+	for stackName, stackConfig := range Configs.StackConfigs {
+		if stackConfig == nil {
+			return fmt.Errorf("invalid stacks config for %s: stack config must not be empty", stackName)
+		}
+		legacyComposeSet := strings.TrimSpace(stackConfig.ComposeFile) != ""
+		canonicalComposeSet := stackConfig.ComposeFiles != nil
+		if legacyComposeSet == canonicalComposeSet {
+			return fmt.Errorf("invalid stacks config for %s: use either compose_file or compose_files, but not both", stackName)
+		}
+		if canonicalComposeSet {
+			if len(stackConfig.ComposeFiles) == 0 {
+				return fmt.Errorf("invalid stacks config for %s: compose_files must not be empty", stackName)
+			}
+			for i, composeFile := range stackConfig.ComposeFiles {
+				if strings.TrimSpace(composeFile) == "" {
+					return fmt.Errorf("invalid stacks config for %s: compose_files[%d] must not be empty", stackName, i)
+				}
+			}
+		}
+	}
+	return nil
 }

@@ -13,9 +13,9 @@ func getStacks(ctx *gin.Context) {
 	var stacks []map[string]string
 	for k, v := range stacksStatus {
 		stacks = append(stacks, map[string]string{
-			"Name": k,
-			"Error": v.Error,
-			"RepoURL": v.RepoURL,
+			"Name":     k,
+			"Error":    v.Error,
+			"RepoURL":  v.RepoURL,
 			"Revision": v.Revision,
 		})
 	}
